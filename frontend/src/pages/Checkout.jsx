@@ -6,7 +6,6 @@ import {
     FaShieldAlt,
     FaTruck,
     FaCreditCard,
-    FaCheck,
     FaShoppingBag,
     FaChevronRight,
 } from "react-icons/fa";
@@ -40,13 +39,11 @@ function Checkout() {
     }, []);
 
     const subtotal = cart.reduce(
-        (sum, item) =>
-            sum + item.product.price * item.quantity,
+        (sum, item) => sum + item.product.price * item.quantity,
         0
     );
 
     const deliveryCharge = 0;
-
     const total = subtotal + deliveryCharge;
 
     const handlePayment = async () => {
@@ -60,20 +57,14 @@ function Checkout() {
                 amount: response.razorpayOrder.amount,
                 currency: response.razorpayOrder.currency,
                 order_id: response.razorpayOrder.id,
-
-                name: "ShopHub",
+                name: "Bazario",
                 description: "Order Payment",
-
                 handler: async function (paymentResponse) {
                     try {
                         await verifyPayment(paymentResponse);
-
-                        alert("Payment Successful");
-
                         navigate("/orders");
                     } catch (error) {
                         console.log(error);
-
                         alert(
                             error.response?.data?.message ||
                                 "Payment verification failed"
@@ -82,546 +73,248 @@ function Checkout() {
                         setPaymentLoading(false);
                     }
                 },
-
                 modal: {
                     ondismiss: () => {
                         setPaymentLoading(false);
                     },
                 },
-
                 theme: {
-                    color: "#4f46e5",
+                    color: "#9333ea", // purple-600
                 },
             };
 
             const razor = new window.Razorpay(option);
-
             razor.open();
-
         } catch (error) {
             console.log(error);
-
             alert(
                 error.response?.data?.message ||
                     "Unable to process payment"
             );
-
             setPaymentLoading(false);
         }
     };
 
     if (loading) {
         return (
-            <div className="min-h-screen bg-[#f7f8fc] flex items-center justify-center">
-
+            <div className="min-h-screen bg-slate-50 flex items-center justify-center">
                 <div className="flex flex-col items-center">
-
-                    <div className="relative w-14 h-14">
-
-                        <div className="absolute inset-0 rounded-full border-4 border-indigo-100" />
-
-                        <div className="absolute inset-0 rounded-full border-4 border-transparent border-t-indigo-600 animate-spin" />
-
-                    </div>
-
-                    <p className="mt-5 text-sm font-medium text-slate-500">
-                        Preparing your checkout...
+                    <div className="w-10 h-10 border-4 border-purple-200 border-t-purple-600 rounded-full animate-spin" />
+                    <p className="mt-4 text-xs font-bold uppercase tracking-widest text-slate-400">
+                        Preparing Checkout
                     </p>
-
                 </div>
-
             </div>
         );
     }
 
     if (cart.length === 0) {
         return (
-            <div className="min-h-screen bg-[#f7f8fc] flex items-center justify-center px-6">
-
-                <div className="max-w-md w-full text-center">
-
-                    <div className="relative mx-auto w-28 h-28">
-
-                        <div className="absolute inset-0 bg-indigo-100 rounded-[2rem] rotate-6" />
-
-                        <div className="absolute inset-0 bg-white rounded-[2rem] shadow-xl flex items-center justify-center text-indigo-600">
-
-                            <FaShoppingBag size={38} />
-
-                        </div>
-
+            <div className="min-h-screen bg-slate-50 flex items-center justify-center px-4">
+                <div className="max-w-md w-full bg-white p-10 rounded-3xl shadow-sm border border-slate-100 text-center">
+                    <div className="w-20 h-20 mx-auto bg-purple-50 rounded-full flex items-center justify-center text-purple-600 mb-6">
+                        <FaShoppingBag size={32} />
                     </div>
-
-                    <h1 className="text-3xl font-extrabold text-slate-900 mt-9">
-                        Your cart is empty
-                    </h1>
-
-                    <p className="text-slate-500 mt-3 leading-7">
-                        Looks like you haven't added anything to your
-                        cart yet. Explore our products and find something
-                        you love.
+                    <h1 className="text-2xl font-black text-slate-900 mb-2">Cart is empty</h1>
+                    <p className="text-sm font-medium text-slate-500 mb-8">
+                        You have no items in your cart to checkout.
                     </p>
-
                     <Link
                         to="/"
-                        className="inline-flex items-center gap-3 mt-8 bg-indigo-600 hover:bg-indigo-700 text-white px-7 py-3.5 rounded-xl font-semibold transition shadow-lg shadow-indigo-200"
+                        className="inline-flex items-center gap-2 bg-purple-600 hover:bg-purple-700 text-white rounded-xl shadow-md shadow-purple-200 px-8 py-3.5 font-bold text-sm transition-all uppercase tracking-widest"
                     >
-                        Start Shopping
-                        <FaChevronRight size={12} />
+                        Return to Shop
                     </Link>
-
                 </div>
-
             </div>
         );
     }
 
     return (
-        <div className="min-h-screen bg-[#f7f8fc]">
-
+        <div className="min-h-screen bg-slate-50 font-sans text-slate-900 pb-24">
             {/* HEADER */}
-
-            <header className="bg-white border-b border-slate-200">
-
-                <div className="max-w-7xl mx-auto px-5 sm:px-8 py-5">
-
+            <header className="bg-white border-b border-slate-200 shadow-sm sticky top-0 z-10">
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5">
                     <div className="flex items-center justify-between">
-
                         <Link
                             to="/cart"
-                            className="flex items-center gap-2 text-sm font-semibold text-slate-500 hover:text-indigo-600 transition"
+                            className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-slate-500 hover:text-purple-600 transition-colors"
                         >
-                            <FaArrowLeft size={12} />
-                            Back to cart
+                            <FaArrowLeft size={10} />
+                            Back to Cart
                         </Link>
-
-                        <div className="flex items-center gap-2 text-sm text-slate-400">
-
-                            <FaLock
-                                size={11}
-                                className="text-emerald-500"
-                            />
-
+                        <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-emerald-600">
+                            <FaLock size={10} />
                             Secure Checkout
-
                         </div>
-
                     </div>
-
                 </div>
-
             </header>
 
             {/* MAIN */}
-
-            <main className="max-w-7xl mx-auto px-5 sm:px-8 py-10 lg:py-14">
-
-                {/* TITLE */}
-
-                <div className="max-w-3xl mb-10">
-
-                    <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-[0.2em] text-indigo-600">
-                        Checkout
-                        <span className="w-8 h-px bg-indigo-200" />
-                        Order Review
-                    </div>
-
-                    <h1 className="text-4xl sm:text-5xl font-black text-slate-900 tracking-tight mt-3">
+            <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 lg:py-16">
+                <div className="mb-10">
+                    <h1 className="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight" style={{ fontFamily: "var(--font-heading)" }}>
                         Complete your order
                     </h1>
-
-                    <p className="text-slate-500 mt-3 text-base sm:text-lg">
-                        Review your items and continue to secure payment.
-                    </p>
-
-                </div>
-
-                {/* PROGRESS */}
-
-                <div className="hidden md:flex items-center max-w-xl mb-10">
-
-                    <div className="flex items-center gap-3">
-
-                        <div className="w-9 h-9 rounded-full bg-indigo-600 text-white flex items-center justify-center text-sm">
-                            <FaCheck size={12} />
-                        </div>
-
-                        <span className="text-sm font-bold text-slate-900">
-                            Cart
-                        </span>
-
-                    </div>
-
-                    <div className="w-20 h-px bg-indigo-600 mx-4" />
-
-                    <div className="flex items-center gap-3">
-
-                        <div className="w-9 h-9 rounded-full bg-indigo-600 text-white flex items-center justify-center text-sm">
-                            2
-                        </div>
-
-                        <span className="text-sm font-bold text-indigo-600">
-                            Checkout
-                        </span>
-
-                    </div>
-
-                    <div className="w-20 h-px bg-slate-200 mx-4" />
-
-                    <div className="flex items-center gap-3">
-
-                        <div className="w-9 h-9 rounded-full bg-slate-100 text-slate-400 flex items-center justify-center text-sm">
-                            3
-                        </div>
-
-                        <span className="text-sm font-medium text-slate-400">
-                            Confirmation
-                        </span>
-
-                    </div>
-
                 </div>
 
                 {/* CONTENT */}
-
-                <div className="grid lg:grid-cols-[1fr_420px] gap-8 items-start">
-
-                    {/* LEFT */}
-
+                <div className="grid lg:grid-cols-[1fr_420px] gap-8 lg:gap-12 items-start">
+                    
+                    {/* LEFT PANE: ORDER ITEMS */}
                     <section>
-
-                        <div className="bg-white rounded-[1.75rem] border border-slate-200 shadow-[0_10px_40px_rgba(15,23,42,0.05)] overflow-hidden">
-
-                            <div className="px-7 py-6 border-b border-slate-100 flex items-center justify-between">
-
-                                <div>
-
-                                    <h2 className="text-xl font-extrabold text-slate-900">
-                                        Order items
-                                    </h2>
-
-                                    <p className="text-sm text-slate-400 mt-1">
-                                        {cart.length}{" "}
-                                        {cart.length === 1
-                                            ? "item"
-                                            : "items"}{" "}
-                                        in your order
-                                    </p>
-
-                                </div>
-
-                                <div className="w-11 h-11 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center">
-
-                                    <FaShoppingBag />
-
-                                </div>
-
+                        <div className="bg-white rounded-3xl shadow-sm border border-slate-100 overflow-hidden">
+                            <div className="px-6 py-5 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+                                <h2 className="text-sm font-bold uppercase tracking-widest text-slate-900">
+                                    Order Items
+                                </h2>
+                                <span className="text-xs font-bold text-slate-500 bg-white px-3 py-1 rounded-full border border-slate-200">
+                                    {cart.length} {cart.length === 1 ? "Item" : "Items"}
+                                </span>
                             </div>
 
                             <div className="divide-y divide-slate-100">
-
                                 {cart.map((item) => (
-
-                                    <div
-                                        key={item._id}
-                                        className="p-6 sm:p-7 flex gap-5 sm:gap-6 hover:bg-slate-50/50 transition"
-                                    >
-
+                                    <div key={item._id} className="p-6 flex flex-col sm:flex-row gap-6">
                                         {/* IMAGE */}
-
-                                        <div className="relative w-24 h-24 sm:w-32 sm:h-32 shrink-0 rounded-2xl bg-slate-100 overflow-hidden">
-
+                                        <div className="relative w-24 h-24 sm:w-28 sm:h-28 shrink-0 bg-slate-50 rounded-2xl border border-slate-100">
                                             <img
-                                                src={
-                                                    item.product
-                                                        .images?.[0]
-                                                        ?.url
-                                                }
-                                                alt={
-                                                    item.product.title
-                                                }
-                                                className="w-full h-full object-cover"
+                                                src={item.product.images?.[0]?.url}
+                                                alt={item.product.title}
+                                                className="w-full h-full object-contain p-2"
                                             />
-
-                                            <span className="absolute top-2 right-2 min-w-6 h-6 px-1.5 bg-white/95 backdrop-blur rounded-full flex items-center justify-center text-xs font-bold text-slate-800 shadow">
-                                                ×{item.quantity}
+                                            <span className="absolute -top-2 -right-2 min-w-[24px] h-6 px-1.5 bg-slate-900 rounded-full flex items-center justify-center text-[10px] font-bold text-white shadow-sm">
+                                                {item.quantity}
                                             </span>
-
                                         </div>
 
                                         {/* DETAILS */}
-
-                                        <div className="flex-1 min-w-0 flex flex-col justify-between">
-
+                                        <div className="flex-1 flex flex-col justify-between">
                                             <div>
-
-                                                <p className="text-xs font-bold uppercase tracking-wider text-indigo-500">
-                                                    {
-                                                        item.product
-                                                            .category
-                                                    }
-                                                </p>
-
-                                                <h3 className="font-bold text-slate-900 text-lg sm:text-xl mt-1 leading-tight">
-                                                    {
-                                                        item.product
-                                                            .title
-                                                    }
+                                                <h3 className="font-bold text-slate-900 text-base sm:text-lg leading-tight">
+                                                    {item.product.title}
                                                 </h3>
-
+                                                <p className="text-xs font-bold uppercase tracking-widest text-purple-600 mt-2 block">
+                                                    {item.product.category}
+                                                </p>
                                             </div>
-
-                                            <div className="flex items-end justify-between gap-4 mt-5">
-
+                                            <div className="flex items-end justify-between gap-4 mt-4 bg-slate-50 p-3 rounded-xl border border-slate-100">
                                                 <div>
-
-                                                    <p className="text-xs text-slate-400">
-                                                        Unit price
+                                                    <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-0.5">
+                                                        Unit Price
                                                     </p>
-
-                                                    <p className="font-semibold text-slate-700 mt-1">
-                                                        ₹
-                                                        {item.product.price.toLocaleString(
-                                                            "en-IN"
-                                                        )}
+                                                    <p className="font-semibold text-slate-700 text-sm">
+                                                        ₹{item.product.price.toLocaleString("en-IN")}
                                                     </p>
-
                                                 </div>
-
                                                 <div className="text-right">
-
-                                                    <p className="text-xs text-slate-400">
-                                                        Item total
+                                                    <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-0.5">
+                                                        Total
                                                     </p>
-
-                                                    <p className="font-extrabold text-slate-900 text-lg mt-1">
-                                                        ₹
-                                                        {(
-                                                            item
-                                                                .product
-                                                                .price *
-                                                            item.quantity
-                                                        ).toLocaleString(
-                                                            "en-IN"
-                                                        )}
+                                                    <p className="font-black text-slate-900 text-base">
+                                                        ₹{(item.product.price * item.quantity).toLocaleString("en-IN")}
                                                     </p>
-
                                                 </div>
-
                                             </div>
-
                                         </div>
-
                                     </div>
-
                                 ))}
-
                             </div>
-
                         </div>
 
-                        {/* DELIVERY CARD */}
-
-                        <div className="mt-6 bg-white rounded-[1.75rem] border border-slate-200 shadow-[0_10px_40px_rgba(15,23,42,0.04)] p-7">
-
-                            <div className="flex items-start gap-4">
-
-                                <div className="w-12 h-12 shrink-0 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
-                                    <FaTruck />
+                        {/* DELIVERY */}
+                        <div className="mt-8 bg-white rounded-3xl shadow-sm border border-slate-100 overflow-hidden">
+                            <div className="p-6 flex items-center gap-5">
+                                <div className="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
+                                    <FaTruck className="text-xl" />
                                 </div>
-
-                                <div className="flex-1">
-
-                                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-
-                                        <div>
-
-                                            <h3 className="font-extrabold text-slate-900">
-                                                Standard Delivery
-                                            </h3>
-
-                                            <p className="text-sm text-slate-400 mt-1">
-                                                Estimated delivery in 3–7
-                                                business days
-                                            </p>
-
-                                        </div>
-
-                                        <span className="inline-flex w-fit px-3 py-1 rounded-full bg-emerald-50 text-emerald-600 text-xs font-bold">
-                                            FREE
-                                        </span>
-
+                                <div className="flex-1 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                                    <div>
+                                        <h3 className="text-sm font-bold text-slate-900">
+                                            Standard Delivery
+                                        </h3>
+                                        <p className="text-xs font-medium text-slate-500 mt-0.5">
+                                            Estimated delivery in 3–7 business days
+                                        </p>
                                     </div>
-
+                                    <span className="text-xs font-bold uppercase tracking-widest text-emerald-600 bg-emerald-50 px-3 py-1.5 rounded-lg">
+                                        Free
+                                    </span>
                                 </div>
-
                             </div>
-
                         </div>
-
                     </section>
 
-                    {/* RIGHT */}
-
-                    <aside>
-
-                        <div className="lg:sticky lg:top-24">
-
-                            <div className="relative bg-slate-900 rounded-[2rem] overflow-hidden shadow-2xl shadow-slate-300">
-
-                                {/* DECORATION */}
-
-                                <div className="absolute -top-20 -right-20 w-56 h-56 rounded-full bg-indigo-500/20 blur-2xl" />
-
-                                <div className="absolute -bottom-24 -left-20 w-64 h-64 rounded-full bg-blue-500/10 blur-3xl" />
-
-                                <div className="relative p-7 sm:p-8">
-
-                                    <div className="flex items-center justify-between">
-
-                                        <div>
-
-                                            <p className="text-indigo-300 text-xs uppercase tracking-[0.2em] font-bold">
-                                                Summary
-                                            </p>
-
-                                            <h2 className="text-2xl font-extrabold text-white mt-2">
-                                                Order total
-                                            </h2>
-
-                                        </div>
-
-                                        <div className="w-12 h-12 rounded-2xl bg-white/10 border border-white/10 flex items-center justify-center text-indigo-300">
-                                            <FaCreditCard />
-                                        </div>
-
+                    {/* RIGHT PANE: PAYMENT SUMMARY */}
+                    <aside className="lg:sticky lg:top-28">
+                        <div className="bg-white rounded-3xl shadow-lg shadow-slate-200/60 border border-slate-100 overflow-hidden">
+                            
+                            <div className="p-6 sm:p-8">
+                                <div className="flex items-center justify-between mb-8">
+                                    <h2 className="text-base font-extrabold text-slate-900">
+                                        Payment Summary
+                                    </h2>
+                                    <div className="w-10 h-10 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center">
+                                        <FaCreditCard />
                                     </div>
-
-                                    {/* PRICE */}
-
-                                    <div className="mt-8 space-y-4">
-
-                                        <div className="flex justify-between text-slate-300">
-
-                                            <span>
-                                                Subtotal
-                                            </span>
-
-                                            <span className="font-semibold text-white">
-                                                ₹
-                                                {subtotal.toLocaleString(
-                                                    "en-IN"
-                                                )}
-                                            </span>
-
-                                        </div>
-
-                                        <div className="flex justify-between text-slate-300">
-
-                                            <span>
-                                                Delivery
-                                            </span>
-
-                                            <span className="font-bold text-emerald-400">
-                                                FREE
-                                            </span>
-
-                                        </div>
-
-                                    </div>
-
-                                    <div className="border-t border-white/10 my-7" />
-
-                                    <div>
-
-                                        <p className="text-sm text-slate-400">
-                                            Total payable
-                                        </p>
-
-                                        <div className="flex items-end justify-between gap-3 mt-1">
-
-                                            <h3 className="text-4xl font-black text-white tracking-tight">
-                                                ₹
-                                                {total.toLocaleString(
-                                                    "en-IN"
-                                                )}
-                                            </h3>
-
-                                            <span className="text-xs text-slate-500 mb-1">
-                                                INR
-                                            </span>
-
-                                        </div>
-
-                                    </div>
-
-                                    {/* PAYMENT */}
-
-                                    <button
-                                        onClick={handlePayment}
-                                        disabled={paymentLoading}
-                                        className="w-full mt-8 bg-white hover:bg-indigo-50 disabled:opacity-60 text-slate-900 py-4 rounded-xl font-extrabold flex items-center justify-center gap-3 transition shadow-xl"
-                                    >
-
-                                        <FaLock className="text-indigo-600" />
-
-                                        {paymentLoading
-                                            ? "Processing..."
-                                            : "Continue to Payment"}
-
-                                    </button>
-
-                                    <p className="text-center text-xs text-slate-500 mt-4">
-                                        You will be redirected to Razorpay
-                                        for secure payment.
-                                    </p>
-
                                 </div>
 
+                                <div className="space-y-4 text-sm font-medium text-slate-600">
+                                    <div className="flex justify-between items-center p-3 bg-slate-50 rounded-xl border border-slate-100">
+                                        <span>Subtotal</span>
+                                        <span className="font-bold text-slate-900">
+                                            ₹{subtotal.toLocaleString("en-IN")}
+                                        </span>
+                                    </div>
+                                    <div className="flex justify-between items-center p-3 bg-slate-50 rounded-xl border border-slate-100">
+                                        <span>Delivery</span>
+                                        <span className="text-emerald-600 font-bold uppercase tracking-widest text-xs">
+                                            Free
+                                        </span>
+                                    </div>
+                                </div>
+
+                                <div className="border-t border-slate-100 my-6" />
+
+                                <div>
+                                    <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-2">
+                                        Total Payable
+                                    </p>
+                                    <div className="flex items-baseline gap-2">
+                                        <h3 className="text-4xl font-black text-slate-900 tracking-tight">
+                                            ₹{total.toLocaleString("en-IN")}
+                                        </h3>
+                                        <span className="text-xs font-bold text-slate-400">
+                                            INR
+                                        </span>
+                                    </div>
+                                </div>
+
+                                <button
+                                    onClick={handlePayment}
+                                    disabled={paymentLoading}
+                                    className="w-full mt-8 bg-purple-600 hover:bg-purple-700 disabled:bg-slate-300 disabled:cursor-not-allowed text-white rounded-xl py-4 font-bold text-sm flex items-center justify-center gap-2 shadow-md shadow-purple-200 transition-all uppercase tracking-widest"
+                                >
+                                    {paymentLoading ? (
+                                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                                    ) : (
+                                        <>
+                                            <FaLock />
+                                            Pay Now
+                                        </>
+                                    )}
+                                </button>
+                                
+                                <div className="mt-6 pt-5 border-t border-slate-100 flex items-center justify-center gap-2 text-[10px] font-bold uppercase tracking-widest text-slate-400">
+                                    <FaShieldAlt className="text-emerald-500" />
+                                    <span>Secure Razorpay Processing</span>
+                                </div>
                             </div>
-
-                            {/* TRUST */}
-
-                            <div className="grid grid-cols-2 gap-3 mt-4">
-
-                                <div className="bg-white border border-slate-200 rounded-2xl p-4">
-
-                                    <FaShieldAlt className="text-indigo-500 mb-3" />
-
-                                    <p className="text-xs font-bold text-slate-800">
-                                        Secure payment
-                                    </p>
-
-                                    <p className="text-[11px] text-slate-400 mt-1 leading-4">
-                                        Protected checkout
-                                    </p>
-
-                                </div>
-
-                                <div className="bg-white border border-slate-200 rounded-2xl p-4">
-
-                                    <FaLock className="text-emerald-500 mb-3" />
-
-                                    <p className="text-xs font-bold text-slate-800">
-                                        Your data is safe
-                                    </p>
-
-                                    <p className="text-[11px] text-slate-400 mt-1 leading-4">
-                                        Encrypted transaction
-                                    </p>
-
-                                </div>
-
-                            </div>
-
                         </div>
-
                     </aside>
-
                 </div>
-
             </main>
-
         </div>
     );
 }

@@ -13,8 +13,8 @@ router.get("/page/all",getproductwithpagination);
 router.get("/category/:category",getproductwithcategory);
 router.get("/my/product",isAuthenticate,getmyproduct);
 router.get("/total/count",getproductcount);
-router.get("/:id",getsingleproduct);
-router.put("/:id",isAuthenticate,authorizeRole("admin"),upload.single("image"),updateproduct);
-router.delete("/:id",isAuthenticate,authorizeRole("seller"),deleteproduct);
+router.get("/:id", getsingleproduct);
+router.put("/:id", isAuthenticate, authorizeRole("admin", "seller"), upload.array("images", 5), updateproduct);
+router.delete("/:id", isAuthenticate, authorizeRole("admin", "seller"), deleteproduct);
 
 export default router;

@@ -19,3 +19,8 @@ export const getProfile=async()=>{
     const response=await api.get("/auth/me");
     return response.data;
 }
+
+export const updateUserProfile = async (userData) => {
+    const response = await api.put("/auth/me", userData);
+    return response.data;
+};

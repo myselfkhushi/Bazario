@@ -1,300 +1,242 @@
-import { useSelector } from "react-redux";
+import React, { useState } from "react";
+import { useSelector, useDispatch } from "react-redux";
 import { Link } from "react-router-dom";
+import toast from "react-hot-toast";
 import {
-    FaUserCircle,
-    FaEnvelope,
-    FaUserTag,
-    FaShoppingBag,
-    FaHeart,
-    FaBoxOpen,
-    FaStore,
-} from "react-icons/fa";
+    User,
+    Mail,
+    Shield,
+    Package,
+    Heart,
+    Store,
+    Settings,
+    LogOut,
+    Edit2,
+    Check,
+    X,
+    Camera
+} from "lucide-react";
+import { updateUserProfile } from "../features/auth/authAPI";
+import { setUser, logout } from "../features/auth/authSlice";
+import { logoutUser } from "../features/auth/authAPI";
+import LogoLoader from "../component/common/LogoLoader.jsx";
 
 function Profile() {
-
     const { user } = useSelector((state) => state.auth);
+    const dispatch = useDispatch();
+
+    const [isEditing, setIsEditing] = useState(false);
+    const [isLoading, setIsLoading] = useState(false);
+    const [formData, setFormData] = useState({
+        name: user?.name || "",
+        email: user?.email || "",
+    });
 
     if (!user) {
-        return (
-            <div className="min-h-screen bg-slate-50 flex items-center justify-center">
-                <p className="text-gray-500 text-lg">
-                    Loading profile...
-                </p>
-            </div>
-        );
+        return <LogoLoader />;
     }
 
+    const handleChange = (e) => {
+        setFormData({ ...formData, [e.target.name]: e.target.value });
+    };
+
+    const handleSave = async () => {
+        if (!formData.name.trim() || !formData.email.trim()) {
+            toast.error("Name and Email cannot be empty.");
+            return;
+        }
+
+        setIsLoading(true);
+        try {
+            const response = await updateUserProfile(formData);
+            if (response.success) {
+                dispatch(setUser(response.user));
+                toast.success("Profile updated successfully!");
+                setIsEditing(false);
+            }
+        } catch (error) {
+            toast.error(error.response?.data?.message || "Failed to update profile");
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const handleSignOut = async () => {
+        try {
+            await logoutUser();
+            dispatch(logout());
+            toast.success("Signed out successfully");
+        } catch (error) {
+            toast.error("Logout failed");
+        }
+    };
+
     return (
-        <div className="min-h-screen bg-slate-50 py-12 px-5">
-
-            <div className="max-w-5xl mx-auto">
-
-                {/* HEADER */}
-
-                <div className="mb-10">
-
-                    <p className="text-sm font-bold uppercase tracking-[0.2em] text-blue-600">
-                        Account
-                    </p>
-
-                    <h1 className="text-4xl md:text-5xl font-black text-slate-900 mt-2">
-                        My Profile
-                    </h1>
-
-                    <p className="text-gray-500 mt-3">
-                        Manage your account information and activities.
-                    </p>
-
+        <div className="min-h-screen bg-slate-50 py-10 px-4 sm:px-6 lg:px-8">
+            <div className="max-w-6xl mx-auto">
+                
+                {/* Header */}
+                <div className="mb-8">
+                    <h1 className="text-3xl font-black text-slate-900 tracking-tight">Account Settings</h1>
+                    <p className="text-sm text-slate-500 mt-1">Manage your profile and preferences.</p>
                 </div>
 
-
-                {/* PROFILE CARD */}
-
-                <div className="bg-white rounded-3xl shadow-xl border border-gray-100 overflow-hidden">
-
-                    {/* TOP SECTION */}
-
-                    <div className="bg-gradient-to-r from-blue-600 via-indigo-600 to-violet-600 px-8 py-10">
-
-                        <div className="flex flex-col md:flex-row md:items-center gap-6">
-
-                            <div className="w-28 h-28 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center border-4 border-white/40">
-
-                                <FaUserCircle
-                                    className="text-white"
-                                    size={72}
-                                />
-
-                            </div>
-
-                            <div className="text-white">
-
-                                <h2 className="text-3xl font-black">
-                                    {user.name}
-                                </h2>
-
-                                <p className="text-blue-100 mt-2">
-                                    {user.email}
-                                </p>
-
-                                <span className="inline-flex items-center gap-2 mt-4 bg-white/20 px-4 py-2 rounded-full text-sm font-semibold">
-
-                                    <FaUserTag />
-
-                                    {user.role}
-
-                                </span>
-
-                            </div>
-
-                        </div>
-
-                    </div>
-
-
-                    {/* ACCOUNT INFORMATION */}
-
-                    <div className="p-8">
-
-                        <h2 className="text-2xl font-bold text-slate-900 mb-6">
-                            Account Information
-                        </h2>
-
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-
-                            {/* NAME */}
-
-                            <div className="border border-gray-200 rounded-2xl p-5 flex items-center gap-4">
-
-                                <div className="w-12 h-12 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center">
-
-                                    <FaUserCircle size={22} />
-
-                                </div>
-
-                                <div>
-
-                                    <p className="text-sm text-gray-400">
-                                        Full Name
-                                    </p>
-
-                                    <p className="font-bold text-slate-800 mt-1">
-                                        {user.name}
-                                    </p>
-
-                                </div>
-
-                            </div>
-
-
-                            {/* EMAIL */}
-
-                            <div className="border border-gray-200 rounded-2xl p-5 flex items-center gap-4">
-
-                                <div className="w-12 h-12 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center">
-
-                                    <FaEnvelope size={20} />
-
-                                </div>
-
-                                <div className="min-w-0">
-
-                                    <p className="text-sm text-gray-400">
-                                        Email Address
-                                    </p>
-
-                                    <p className="font-bold text-slate-800 mt-1 truncate">
-                                        {user.email}
-                                    </p>
-
-                                </div>
-
-                            </div>
-
-
-                            {/* ROLE */}
-
-                            <div className="border border-gray-200 rounded-2xl p-5 flex items-center gap-4">
-
-                                <div className="w-12 h-12 rounded-xl bg-violet-50 text-violet-600 flex items-center justify-center">
-
-                                    <FaUserTag size={20} />
-
-                                </div>
-
-                                <div>
-
-                                    <p className="text-sm text-gray-400">
-                                        Account Type
-                                    </p>
-
-                                    <p className="font-bold text-slate-800 mt-1 capitalize">
-                                        {user.role}
-                                    </p>
-
-                                </div>
-
-                            </div>
-
-                        </div>
-
-
-                        {/* QUICK ACTIONS */}
-
-                        <h2 className="text-2xl font-bold text-slate-900 mt-10 mb-6">
-                            Quick Actions
-                        </h2>
-
-
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-
-                            {/* BUYER */}
-
+                <div className="flex flex-col lg:flex-row gap-8">
+                    
+                    {/* Sidebar Navigation */}
+                    <aside className="w-full lg:w-64 shrink-0">
+                        <nav className="space-y-1">
+                            <Link to="/profile" className="flex items-center gap-3 px-4 py-3 bg-white text-slate-900 text-sm font-bold rounded-xl border border-slate-200 shadow-sm transition">
+                                <User className="w-4 h-4" />
+                                Personal Info
+                            </Link>
+                            <Link to="/orders" className="flex items-center gap-3 px-4 py-3 text-slate-600 hover:text-slate-900 hover:bg-slate-100 text-sm font-semibold rounded-xl transition">
+                                <Package className="w-4 h-4" />
+                                My Orders
+                            </Link>
+                            <Link to="/wishlist" className="flex items-center gap-3 px-4 py-3 text-slate-600 hover:text-slate-900 hover:bg-slate-100 text-sm font-semibold rounded-xl transition">
+                                <Heart className="w-4 h-4" />
+                                Wishlist
+                            </Link>
                             {user.role === "buyer" && (
-                                <>
-                                    <Link
-                                        to="/orders"
-                                        className="group border border-gray-200 rounded-2xl p-6 hover:border-blue-300 hover:shadow-lg transition"
-                                    >
-
-                                        <div className="w-12 h-12 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center group-hover:scale-110 transition">
-
-                                            <FaShoppingBag size={21} />
-
-                                        </div>
-
-                                        <h3 className="font-bold text-lg mt-4">
-                                            My Orders
-                                        </h3>
-
-                                        <p className="text-sm text-gray-500 mt-1">
-                                            View your order history
-                                        </p>
-
-                                    </Link>
-
-
-                                    <Link
-                                        to="/wishlist"
-                                        className="group border border-gray-200 rounded-2xl p-6 hover:border-red-300 hover:shadow-lg transition"
-                                    >
-
-                                        <div className="w-12 h-12 rounded-xl bg-red-50 text-red-500 flex items-center justify-center group-hover:scale-110 transition">
-
-                                            <FaHeart size={20} />
-
-                                        </div>
-
-                                        <h3 className="font-bold text-lg mt-4">
-                                            Wishlist
-                                        </h3>
-
-                                        <p className="text-sm text-gray-500 mt-1">
-                                            View your saved products
-                                        </p>
-
-                                    </Link>
-                                </>
+                                <Link to="/register/seller" className="flex items-center gap-3 px-4 py-3 text-slate-600 hover:text-purple-600 hover:bg-purple-50 text-sm font-semibold rounded-xl transition">
+                                    <Store className="w-4 h-4" />
+                                    Become a Seller
+                                </Link>
                             )}
+                            <button onClick={handleSignOut} className="w-full flex items-center gap-3 px-4 py-3 text-rose-600 hover:bg-rose-50 text-sm font-semibold rounded-xl transition mt-4">
+                                <LogOut className="w-4 h-4" />
+                                Sign Out
+                            </button>
+                        </nav>
+                    </aside>
 
-
-                            {/* SELLER */}
-
-                            {user.role === "seller" && (
-                                <>
-                                    <Link
-                                        to="/seller/dashboard"
-                                        className="group border border-gray-200 rounded-2xl p-6 hover:border-indigo-300 hover:shadow-lg transition"
-                                    >
-
-                                        <div className="w-12 h-12 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center group-hover:scale-110 transition">
-
-                                            <FaStore size={20} />
-
+                    {/* Main Content */}
+                    <main className="flex-1 space-y-6">
+                        
+                        {/* Personal Information Card */}
+                        <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
+                            <div className="p-6 sm:p-8 border-b border-slate-100 flex items-start sm:items-center justify-between flex-col sm:flex-row gap-4">
+                                <div className="flex items-center gap-5">
+                                    <div className="relative group cursor-pointer">
+                                        <div className="w-20 h-20 rounded-full bg-slate-900 text-white flex items-center justify-center text-3xl font-black uppercase">
+                                            {user.name[0]}
                                         </div>
-
-                                        <h3 className="font-bold text-lg mt-4">
-                                            Seller Dashboard
-                                        </h3>
-
-                                        <p className="text-sm text-gray-500 mt-1">
-                                            Manage your store
-                                        </p>
-
-                                    </Link>
-
-
-                                    <Link
-                                        to="/seller/products"
-                                        className="group border border-gray-200 rounded-2xl p-6 hover:border-green-300 hover:shadow-lg transition"
-                                    >
-
-                                        <div className="w-12 h-12 rounded-xl bg-green-50 text-green-600 flex items-center justify-center group-hover:scale-110 transition">
-
-                                            <FaBoxOpen size={20} />
-
+                                        <div className="absolute inset-0 bg-black/50 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                                            <Camera className="w-6 h-6 text-white" />
                                         </div>
+                                    </div>
+                                    <div>
+                                        <h2 className="text-xl font-bold text-slate-900">{user.name}</h2>
+                                        <p className="text-sm font-medium text-slate-500 capitalize">{user.role} Account</p>
+                                    </div>
+                                </div>
+                                
+                                {!isEditing ? (
+                                    <button 
+                                        onClick={() => setIsEditing(true)}
+                                        className="flex items-center gap-2 px-4 py-2 bg-slate-50 hover:bg-slate-100 text-slate-700 text-sm font-bold rounded-xl border border-slate-200 transition"
+                                    >
+                                        <Edit2 className="w-3.5 h-3.5" />
+                                        Edit Profile
+                                    </button>
+                                ) : (
+                                    <div className="flex items-center gap-2">
+                                        <button 
+                                            onClick={() => {
+                                                setIsEditing(false);
+                                                setFormData({ name: user.name, email: user.email });
+                                            }}
+                                            className="px-4 py-2 hover:bg-slate-50 text-slate-600 text-sm font-bold rounded-xl transition"
+                                            disabled={isLoading}
+                                        >
+                                            Cancel
+                                        </button>
+                                        <button 
+                                            onClick={handleSave}
+                                            disabled={isLoading}
+                                            className="flex items-center gap-2 px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white text-sm font-bold rounded-xl transition disabled:opacity-50"
+                                        >
+                                            {isLoading ? (
+                                                <div className="w-3.5 h-3.5 border-2 border-slate-500 border-t-white rounded-full animate-spin"></div>
+                                            ) : (
+                                                <Check className="w-3.5 h-3.5" />
+                                            )}
+                                            Save
+                                        </button>
+                                    </div>
+                                )}
+                            </div>
 
-                                        <h3 className="font-bold text-lg mt-4">
-                                            My Products
-                                        </h3>
+                            <div className="p-6 sm:p-8 space-y-6">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    
+                                    {/* Full Name */}
+                                    <div>
+                                        <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">
+                                            Full Name
+                                        </label>
+                                        {isEditing ? (
+                                            <input
+                                                type="text"
+                                                name="name"
+                                                value={formData.name}
+                                                onChange={handleChange}
+                                                className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-900 transition"
+                                            />
+                                        ) : (
+                                            <div className="flex items-center gap-3">
+                                                <User className="w-4 h-4 text-slate-400" />
+                                                <span className="text-sm font-semibold text-slate-900">{user.name}</span>
+                                            </div>
+                                        )}
+                                    </div>
 
-                                        <p className="text-sm text-gray-500 mt-1">
-                                            Manage your products
-                                        </p>
+                                    {/* Email Address */}
+                                    <div>
+                                        <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">
+                                            Email Address
+                                        </label>
+                                        {isEditing ? (
+                                            <input
+                                                type="email"
+                                                name="email"
+                                                value={formData.email}
+                                                onChange={handleChange}
+                                                className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-900 transition"
+                                            />
+                                        ) : (
+                                            <div className="flex items-center gap-3">
+                                                <Mail className="w-4 h-4 text-slate-400" />
+                                                <span className="text-sm font-semibold text-slate-900">{user.email}</span>
+                                            </div>
+                                        )}
+                                    </div>
 
-                                    </Link>
-                                </>
-                            )}
-
+                                </div>
+                            </div>
                         </div>
 
-                    </div>
+                        {/* Security Settings Placeholder */}
+                        <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm p-6 sm:p-8">
+                            <h3 className="text-lg font-bold text-slate-900 mb-4 flex items-center gap-2">
+                                <Shield className="w-5 h-5 text-slate-400" />
+                                Security
+                            </h3>
+                            <div className="flex items-center justify-between py-4 border-t border-slate-100">
+                                <div>
+                                    <p className="text-sm font-bold text-slate-900">Password</p>
+                                    <p className="text-xs font-medium text-slate-500 mt-0.5">Change your account password securely.</p>
+                                </div>
+                                <button className="px-4 py-2 bg-slate-50 hover:bg-slate-100 text-slate-700 text-xs font-bold rounded-xl border border-slate-200 transition">
+                                    Update Password
+                                </button>
+                            </div>
+                        </div>
 
+                    </main>
                 </div>
-
             </div>
-
         </div>
     );
 }

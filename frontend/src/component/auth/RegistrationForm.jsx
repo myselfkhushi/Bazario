@@ -2,20 +2,11 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { useDispatch } from "react-redux";
 import { useNavigate, Link } from "react-router-dom";
-import {
-    FaUser,
-    FaEnvelope,
-    FaLock,
-    FaEye,
-    FaEyeSlash,
-} from "react-icons/fa";
+import { User, Mail, Lock, Eye, EyeOff, ArrowRight, AlertCircle, CheckCircle2 } from "lucide-react";
+import toast from "react-hot-toast";
 
 import { registerUser } from "../../features/auth/authAPI";
-import {
-    setLoading,
-    setError,
-    setUser,
-} from "../../features/auth/authSlice";
+import { setLoading, setError, setUser } from "../../features/auth/authSlice";
 
 function RegistrationForm() {
     const {
@@ -32,9 +23,13 @@ function RegistrationForm() {
 
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+    const [submitting, setSubmitting] = useState(false);
+    const [formError, setFormError] = useState("");
 
     const onSubmit = async (data) => {
         try {
+            setSubmitting(true);
+            setFormError("");
             dispatch(setLoading(true));
 
             const response = await registerUser({
@@ -44,269 +39,248 @@ function RegistrationForm() {
             });
 
             dispatch(setUser(response.user));
-
+            toast.success("Account created successfully! Welcome to Bazario!");
             navigate("/");
         } catch (error) {
-            dispatch(
-                setError(
-                    error.response?.data?.message ||
-                        "Something went wrong"
-                )
-            );
+            const msg = error.response?.data?.message || "Registration failed. Please try again.";
+            setFormError(msg);
+            toast.error(msg);
+            dispatch(setError(msg));
         } finally {
+            setSubmitting(false);
             dispatch(setLoading(false));
         }
     };
 
     return (
-        <div className="min-h-screen flex items-center justify-center bg-linear-to-br from-blue-100 via-white to-indigo-100 px-6">
+        <div className="min-h-[90vh] flex items-center justify-center p-4 sm:p-8 bg-slate-50 font-sans">
+            <div className="flex flex-col lg:flex-row bg-white rounded-3xl overflow-hidden max-w-6xl w-full shadow-2xl shadow-slate-200/50">
 
-            <div className="grid lg:grid-cols-2 bg-white rounded-3xl shadow-2xl overflow-hidden max-w-6xl w-full">
+                {/* Left Side: Premium Image Panel */}
+                <div className="hidden lg:flex lg:w-5/12 relative bg-slate-900 text-white flex-col justify-between p-12 overflow-hidden">
+                    {/* Vibrant Background Image */}
+                    <img 
+                        src="https://images.unsplash.com/photo-1441986300917-64674bd600d8?q=80&w=1000&auto=format&fit=crop" 
+                        alt="Premium Lifestyle" 
+                        className="absolute inset-0 w-full h-full object-cover opacity-80"
+                    />
+                    {/* Gradient Overlay for Text Readability */}
+                    <div className="absolute inset-0 bg-gradient-to-t from-slate-900/90 via-slate-900/40 to-slate-900/10"></div>
 
-                {/* Left */}
+                    <div className="relative z-10">
+                        <Link to="/" className="inline-flex items-center gap-2 mb-12">
+                            <div className="w-10 h-10 rounded-xl bg-white text-slate-900 flex items-center justify-center font-black text-xl shadow-lg">
+                                B
+                            </div>
+                            <span className="text-2xl font-black tracking-tight text-white uppercase">
+                                Bazario
+                            </span>
+                        </Link>
 
-                <div className="hidden lg:flex bg-linear-to-br from-indigo-700 to-blue-600 text-white p-12 flex-col justify-center">
+                        <h1 className="text-4xl font-black leading-[1.1] mb-4 tracking-tight text-white" style={{ fontFamily: "var(--font-heading)" }}>
+                            Join the <br/> premium club.
+                        </h1>
+                        <p className="text-slate-300 text-sm leading-relaxed max-w-xs font-medium">
+                            Create your account to unlock exclusive deals, manage orders seamlessly, and elevate your shopping experience.
+                        </p>
+                    </div>
 
-                    <h1 className="text-5xl font-bold leading-tight">
-                        Join ShopHub
-                    </h1>
-
-                    <p className="mt-6 text-lg text-blue-100 leading-8">
-                        Create your account to start shopping,
-                        manage orders, wishlist and enjoy a
-                        seamless shopping experience.
-                    </p>
-
+                    <div className="relative z-10 space-y-4 pt-8 border-t border-white/20">
+                        <div className="flex items-center gap-3 text-xs font-bold text-white uppercase tracking-widest">
+                            <CheckCircle2 className="w-5 h-5 text-purple-400 shrink-0" />
+                            <span>100% Genuine Guarantee</span>
+                        </div>
+                        <div className="flex items-center gap-3 text-xs font-bold text-white uppercase tracking-widest">
+                            <CheckCircle2 className="w-5 h-5 text-purple-400 shrink-0" />
+                            <span>Priority Support Access</span>
+                        </div>
+                    </div>
                 </div>
 
-                {/* Right */}
+                {/* Right Side: Form */}
+                <div className="lg:w-7/12 p-8 sm:p-14 flex flex-col justify-center bg-white">
+                    
+                    {/* Header */}
+                    <div className="mb-10">
+                        <h2 className="text-3xl font-black text-slate-900 tracking-tight" style={{ fontFamily: "var(--font-heading)" }}>
+                            Create Account
+                        </h2>
+                        <p className="text-slate-500 text-sm mt-2 font-medium">
+                            Enter your details to get started
+                        </p>
+                    </div>
 
-                <div className="p-10 lg:p-14">
+                    {/* Error Banner */}
+                    {formError && (
+                        <div className="mb-8 p-4 bg-red-50 text-red-700 rounded-2xl flex items-start gap-3 text-sm font-semibold border border-red-100">
+                            <AlertCircle className="w-5 h-5 shrink-0 text-red-500 mt-0.5" />
+                            <span>{formError}</span>
+                        </div>
+                    )}
 
-                    <h2 className="text-4xl font-bold mb-3">
-                        Register
-                    </h2>
-
-                    <p className="text-gray-500 mb-10">
-                        Create your new account
-                    </p>
-
-                    <form
-                        onSubmit={handleSubmit(onSubmit)}
-                        className="space-y-6"
-                    >
-
+                    {/* Form */}
+                    <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
+                        
                         {/* Name */}
-
                         <div>
-
-                            <label className="font-medium">
+                            <label className="block text-xs font-bold text-slate-700 mb-2">
                                 Full Name
                             </label>
-
-                            <div className="relative mt-2">
-
-                                <FaUser className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
-
+                            <div className="relative">
+                                <User className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 pointer-events-none" />
                                 <input
                                     type="text"
-                                    placeholder="Enter your name"
-                                    className="w-full border rounded-xl pl-12 pr-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                    placeholder="John Doe"
+                                    className="w-full bg-slate-50 border border-slate-200 rounded-xl py-3.5 pr-4 text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:border-purple-500 focus:bg-white focus:ring-4 focus:ring-purple-500/10 transition-all"
+                                    style={{
+                                        borderColor: errors.name ? "#EF4444" : undefined,
+                                        paddingLeft: "48px",
+                                    }}
                                     {...register("name", {
-                                        required:
-                                            "Name is required",
+                                        required: "Name is required",
                                     })}
                                 />
-
                             </div>
-
                             {errors.name && (
-                                <p className="text-red-500 text-sm mt-2">
+                                <p className="text-red-500 text-xs mt-2 font-medium">
                                     {errors.name.message}
                                 </p>
                             )}
-
                         </div>
 
                         {/* Email */}
-
                         <div>
-
-                            <label className="font-medium">
-                                Email
+                            <label className="block text-xs font-bold text-slate-700 mb-2">
+                                Email Address
                             </label>
-
-                            <div className="relative mt-2">
-
-                                <FaEnvelope className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
-
+                            <div className="relative">
+                                <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 pointer-events-none" />
                                 <input
                                     type="email"
-                                    placeholder="Enter your email"
-                                    className="w-full border rounded-xl pl-12 pr-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                    placeholder="name@example.com"
+                                    className="w-full bg-slate-50 border border-slate-200 rounded-xl py-3.5 pr-4 text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:border-purple-500 focus:bg-white focus:ring-4 focus:ring-purple-500/10 transition-all"
+                                    style={{
+                                        borderColor: errors.email ? "#EF4444" : undefined,
+                                        paddingLeft: "48px",
+                                    }}
                                     {...register("email", {
-                                        required:
-                                            "Email is required",
-                                    })}
-                                />
-
-                            </div>
-
-                            {errors.email && (
-                                <p className="text-red-500 text-sm mt-2">
-                                    {errors.email.message}
-                                </p>
-                            )}
-
-                        </div>
-
-                        {/* Password */}
-
-                        <div>
-
-                            <label className="font-medium">
-                                Password
-                            </label>
-
-                            <div className="relative mt-2">
-
-                                <FaLock className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
-
-                                <input
-                                    type={
-                                        showPassword
-                                            ? "text"
-                                            : "password"
-                                    }
-                                    placeholder="Enter password"
-                                    className="w-full border rounded-xl pl-12 pr-12 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                    {...register("password", {
-                                        required:
-                                            "Password is required",
-                                        minLength: {
-                                            value: 6,
-                                            message:
-                                                "Password must be at least 6 characters",
+                                        required: "Email address is required",
+                                        pattern: {
+                                            value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
+                                            message: "Invalid email address format",
                                         },
                                     })}
                                 />
+                            </div>
+                            {errors.email && (
+                                <p className="text-red-500 text-xs mt-2 font-medium">
+                                    {errors.email.message}
+                                </p>
+                            )}
+                        </div>
 
+                        {/* Password */}
+                        <div>
+                            <label className="block text-xs font-bold text-slate-700 mb-2">
+                                Password
+                            </label>
+                            <div className="relative">
+                                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 pointer-events-none" />
+                                <input
+                                    type={showPassword ? "text" : "password"}
+                                    placeholder="••••••••••••"
+                                    className="w-full bg-slate-50 border border-slate-200 rounded-xl py-3.5 pr-12 text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:border-purple-500 focus:bg-white focus:ring-4 focus:ring-purple-500/10 transition-all"
+                                    style={{
+                                        borderColor: errors.password ? "#EF4444" : undefined,
+                                        paddingLeft: "48px",
+                                    }}
+                                    {...register("password", {
+                                        required: "Password is required",
+                                        minLength: {
+                                            value: 6,
+                                            message: "Password must be at least 6 characters",
+                                        },
+                                    })}
+                                />
                                 <button
                                     type="button"
-                                    onClick={() =>
-                                        setShowPassword(
-                                            !showPassword
-                                        )
-                                    }
-                                    className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500"
+                                    onClick={() => setShowPassword(!showPassword)}
+                                    className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700 transition-colors"
                                 >
-                                    {showPassword ? (
-                                        <FaEyeSlash />
-                                    ) : (
-                                        <FaEye />
-                                    )}
+                                    {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                                 </button>
-
                             </div>
-
                             {errors.password && (
-                                <p className="text-red-500 text-sm mt-2">
+                                <p className="text-red-500 text-xs mt-2 font-medium">
                                     {errors.password.message}
                                 </p>
                             )}
-
                         </div>
 
                         {/* Confirm Password */}
-
                         <div>
-
-                            <label className="font-medium">
+                            <label className="block text-xs font-bold text-slate-700 mb-2">
                                 Confirm Password
                             </label>
-
-                            <div className="relative mt-2">
-
-                                <FaLock className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
-
+                            <div className="relative">
+                                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 pointer-events-none" />
                                 <input
-                                    type={
-                                        showConfirmPassword
-                                            ? "text"
-                                            : "password"
-                                    }
-                                    placeholder="Confirm password"
-                                    className="w-full border rounded-xl pl-12 pr-12 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                    {...register(
-                                        "confirmPassword",
-                                        {
-                                            required:
-                                                "Confirm Password is required",
-                                            validate: (
-                                                value
-                                            ) =>
-                                                value ===
-                                                    password ||
-                                                "Passwords do not match",
-                                        }
-                                    )}
+                                    type={showConfirmPassword ? "text" : "password"}
+                                    placeholder="••••••••••••"
+                                    className="w-full bg-slate-50 border border-slate-200 rounded-xl py-3.5 pr-12 text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:border-purple-500 focus:bg-white focus:ring-4 focus:ring-purple-500/10 transition-all"
+                                    style={{
+                                        borderColor: errors.confirmPassword ? "#EF4444" : undefined,
+                                        paddingLeft: "48px",
+                                    }}
+                                    {...register("confirmPassword", {
+                                        required: "Please confirm your password",
+                                        validate: (value) =>
+                                            value === password || "Passwords do not match",
+                                    })}
                                 />
-
                                 <button
                                     type="button"
-                                    onClick={() =>
-                                        setShowConfirmPassword(
-                                            !showConfirmPassword
-                                        )
-                                    }
-                                    className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500"
+                                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                                    className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700 transition-colors"
                                 >
-                                    {showConfirmPassword ? (
-                                        <FaEyeSlash />
-                                    ) : (
-                                        <FaEye />
-                                    )}
+                                    {showConfirmPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                                 </button>
-
                             </div>
-
                             {errors.confirmPassword && (
-                                <p className="text-red-500 text-sm mt-2">
-                                    {
-                                        errors.confirmPassword
-                                            .message
-                                    }
+                                <p className="text-red-500 text-xs mt-2 font-medium">
+                                    {errors.confirmPassword.message}
                                 </p>
                             )}
-
                         </div>
 
+                        {/* Submit Button */}
                         <button
                             type="submit"
-                            className="w-full bg-linear-to-r from-blue-600 to-indigo-600 text-white py-3 rounded-xl font-semibold hover:opacity-90 transition"
+                            disabled={submitting}
+                            className="w-full mt-6 py-4 px-6 bg-purple-600 text-white rounded-xl text-sm font-bold shadow-[0_8px_30px_rgb(147,51,234,0.3)] hover:shadow-[0_8px_30px_rgb(147,51,234,0.5)] hover:-translate-y-0.5 transition-all disabled:opacity-50 flex items-center justify-center gap-3"
                         >
-                            Create Account
+                            {submitting ? (
+                                <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                            ) : (
+                                <>
+                                    <span>Create Account</span>
+                                    <ArrowRight className="w-4 h-4" />
+                                </>
+                            )}
                         </button>
-
-                        <p className="text-center text-gray-500">
-
-                            Already have an account?{" "}
-
-                            <Link
-                                to="/login"
-                                className="text-blue-600 font-semibold hover:underline"
-                            >
-                                Login
-                            </Link>
-
-                        </p>
-
                     </form>
 
+                    {/* Bottom login link */}
+                    <div className="mt-8 pt-6 text-center border-t border-slate-100">
+                        <p className="text-slate-500 text-sm font-medium">
+                            Already have an account?{" "}
+                            <Link to="/login" className="text-purple-600 font-bold hover:underline">
+                                Sign In
+                            </Link>
+                        </p>
+                    </div>
                 </div>
-
             </div>
-
         </div>
     );
 }

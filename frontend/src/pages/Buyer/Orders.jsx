@@ -2,9 +2,6 @@ import { useEffect } from "react";
 import { Link } from "react-router-dom";
 import {
     FaBoxOpen,
-    FaCheckCircle,
-    FaClock,
-    FaTruck,
     FaArrowRight,
     FaReceipt,
 } from "react-icons/fa";
@@ -28,9 +25,7 @@ function Orders() {
         const fetchOrders = async () => {
             try {
                 dispatch(setLoading(true));
-
                 const response = await getMyOrders();
-
                 dispatch(setOrders(response.order));
             } catch (error) {
                 dispatch(
@@ -45,363 +40,156 @@ function Orders() {
         fetchOrders();
     }, [dispatch]);
 
-    const getStatusColor = (status) => {
-        switch (status) {
-            case "Delivered":
-                return "bg-emerald-50 text-emerald-600 border-emerald-100";
-
-            case "Shipped":
-                return "bg-blue-50 text-blue-600 border-blue-100";
-
-            case "Pending":
-                return "bg-amber-50 text-amber-600 border-amber-100";
-
-            case "Processing":
-                return "bg-indigo-50 text-indigo-600 border-indigo-100";
-
-            case "Cancelled":
-                return "bg-red-50 text-red-600 border-red-100";
-
-            default:
-                return "bg-slate-50 text-slate-600 border-slate-100";
-        }
-    };
-
-    const getStatusIcon = (status) => {
-        switch (status) {
-            case "Delivered":
-                return <FaCheckCircle />;
-
-            case "Shipped":
-                return <FaTruck />;
-
-            case "Processing":
-                return <FaTruck />;
-
-            default:
-                return <FaClock />;
-        }
-    };
-
     if (loading) {
         return (
-            <div className="min-h-screen bg-[#f7f8fc] flex items-center justify-center">
-
-                <div className="text-center">
-
-                    <div className="relative w-14 h-14 mx-auto">
-
-                        <div className="absolute inset-0 rounded-full border-4 border-indigo-100" />
-
-                        <div className="absolute inset-0 rounded-full border-4 border-transparent border-t-indigo-600 animate-spin" />
-
-                    </div>
-
-                    <p className="mt-5 text-sm font-medium text-slate-500">
-                        Loading your orders...
+            <div className="min-h-[70vh] bg-white flex items-center justify-center">
+                <div className="text-center flex flex-col items-center">
+                    <div className="w-8 h-8 border-2 border-slate-200 border-t-slate-900 rounded-full animate-spin" />
+                    <p className="mt-4 text-xs font-bold uppercase tracking-widest text-slate-400">
+                        Loading Orders...
                     </p>
-
                 </div>
-
             </div>
         );
     }
 
     return (
-        <div className="min-h-screen bg-[#f7f8fc]">
-
+        <div className="min-h-screen bg-white text-slate-900">
             {/* HEADER */}
-
-            <div className="bg-white border-b border-slate-200">
-
-                <div className="max-w-7xl mx-auto px-5 sm:px-8 py-10">
-
-                    <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-5">
-
+            <div className="border-b border-slate-200 bg-slate-50">
+                <div className="max-w-5xl mx-auto px-6 py-12">
+                    <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-6">
                         <div>
-
-                            <div className="flex items-center gap-2 text-xs uppercase tracking-[0.2em] font-bold text-indigo-600">
-
-                                <span className="w-7 h-px bg-indigo-300" />
-
+                            <div className="flex items-center gap-2 text-[10px] uppercase tracking-widest font-black text-slate-500 mb-2">
+                                <span className="w-6 h-px bg-slate-400" />
                                 Account
-
                             </div>
-
-                            <h1 className="text-4xl sm:text-5xl font-black text-slate-900 tracking-tight mt-3">
-                                My Orders
+                            <h1 className="text-4xl font-black tracking-tight" style={{ fontFamily: "var(--font-heading)" }}>
+                                Order History
                             </h1>
-
-                            <p className="text-slate-500 mt-3">
-                                Track and manage all your purchases in one place.
+                            <p className="text-slate-500 mt-2 text-sm">
+                                Track, manage, and review your past purchases.
                             </p>
-
                         </div>
-
-                        <div className="bg-slate-50 border border-slate-200 rounded-2xl px-5 py-4">
-
-                            <p className="text-xs uppercase tracking-wider text-slate-400 font-bold">
+                        <div className="text-left sm:text-right border-l-2 border-slate-200 pl-6">
+                            <p className="text-[10px] uppercase tracking-widest text-slate-400 font-bold">
                                 Total Orders
                             </p>
-
-                            <p className="text-3xl font-black text-slate-900 mt-1">
+                            <p className="text-3xl font-black mt-1">
                                 {orders.length}
                             </p>
-
                         </div>
-
                     </div>
-
                 </div>
-
             </div>
 
             {/* MAIN */}
-
-            <main className="max-w-7xl mx-auto px-5 sm:px-8 py-10">
-
+            <main className="max-w-5xl mx-auto px-6 py-12">
                 {orders.length === 0 ? (
-
                     /* EMPTY STATE */
-
-                    <div className="min-h-[55vh] flex items-center justify-center">
-
-                        <div className="max-w-lg w-full text-center">
-
-                            <div className="relative w-28 h-28 mx-auto">
-
-                                <div className="absolute inset-0 bg-indigo-100 rounded-[2rem] rotate-6" />
-
-                                <div className="absolute inset-0 bg-white rounded-[2rem] shadow-xl flex items-center justify-center text-indigo-600">
-
-                                    <FaBoxOpen size={42} />
-
-                                </div>
-
+                    <div className="min-h-[40vh] flex items-center justify-center border border-dashed border-slate-300">
+                        <div className="max-w-md w-full text-center p-8">
+                            <div className="w-16 h-16 bg-slate-100 flex items-center justify-center rounded-full mx-auto mb-6">
+                                <FaBoxOpen className="text-slate-400 text-2xl" />
                             </div>
-
-                            <h2 className="text-3xl font-black text-slate-900 mt-9">
-                                No orders yet
-                            </h2>
-
-                            <p className="text-slate-500 mt-3 leading-7">
-                                You haven't placed any orders yet.
-                                Discover something you like and start
-                                shopping today.
+                            <h2 className="text-2xl font-bold mb-2">No orders yet</h2>
+                            <p className="text-slate-500 text-sm mb-8">
+                                You haven't placed any orders. Discover something you like and start shopping today.
                             </p>
-
                             <Link
                                 to="/"
-                                className="inline-flex items-center gap-3 mt-8 bg-indigo-600 hover:bg-indigo-700 text-white px-7 py-3.5 rounded-xl font-bold transition shadow-lg shadow-indigo-200"
+                                className="inline-flex items-center gap-3 bg-slate-900 hover:bg-slate-800 text-white px-6 py-3 text-xs font-bold uppercase tracking-widest transition-colors"
                             >
                                 Start Shopping
-                                <FaArrowRight size={12} />
+                                <FaArrowRight size={10} />
                             </Link>
-
                         </div>
-
                     </div>
-
                 ) : (
-
-                    <div className="space-y-7">
-
+                    <div className="space-y-8">
                         {orders.map((order) => (
-
                             <div
                                 key={order._id}
-                                className="bg-white rounded-[1.75rem] border border-slate-200 shadow-[0_10px_40px_rgba(15,23,42,0.05)] overflow-hidden"
+                                className="border border-slate-200 bg-white"
                             >
-
                                 {/* ORDER HEADER */}
-
-                                <div className="bg-slate-900 px-6 sm:px-8 py-6">
-
-                                    <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
-
-                                        <div>
-
-                                            <div className="flex items-center gap-2 text-indigo-300 text-xs uppercase tracking-wider font-bold">
-
-                                                <FaReceipt />
-
-                                                Order
-
-                                            </div>
-
-                                            <p className="text-white font-bold mt-2 break-all">
-                                                #{order._id}
-                                            </p>
-
-                                        </div>
-
-                                        <div className="flex flex-wrap items-center gap-6">
-
+                                <div className="bg-slate-50 px-6 py-4 border-b border-slate-200">
+                                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                                        <div className="flex items-center gap-6">
                                             <div>
-
-                                                <p className="text-xs text-slate-400 uppercase tracking-wider">
-                                                    Total
-                                                </p>
-
-                                                <p className="text-2xl font-black text-white mt-1">
-                                                    ₹
-                                                    {Number(
-                                                        order.totalamount
-                                                    ).toLocaleString(
-                                                        "en-IN"
-                                                    )}
-                                                </p>
-
+                                                <p className="text-[10px] text-slate-500 uppercase tracking-widest font-bold">Order ID</p>
+                                                <p className="font-mono text-sm font-bold mt-1">#{order._id.slice(-8).toUpperCase()}</p>
                                             </div>
-
-                                            <div className="h-10 w-px bg-white/10 hidden sm:block" />
-
-                                            <span
-                                                className={`inline-flex items-center gap-2 px-4 py-2 rounded-full border text-sm font-bold ${getStatusColor(
-                                                    order.orderstatus
-                                                )}`}
-                                            >
-                                                {getStatusIcon(
-                                                    order.orderstatus
-                                                )}
-
+                                            <div className="hidden sm:block w-px h-8 bg-slate-200" />
+                                            <div>
+                                                <p className="text-[10px] text-slate-500 uppercase tracking-widest font-bold">Total Amount</p>
+                                                <p className="text-sm font-bold mt-1">₹{Number(order.totalamount).toLocaleString("en-IN")}</p>
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <span className="inline-flex items-center px-3 py-1 border border-slate-300 bg-white text-[10px] font-bold uppercase tracking-widest text-slate-700">
                                                 {order.orderstatus}
                                             </span>
-
                                         </div>
-
                                     </div>
-
                                 </div>
 
                                 {/* PRODUCTS */}
-
-                                <div className="p-6 sm:p-8">
-
-                                    <div className="flex items-center justify-between mb-5">
-
-                                        <div>
-
-                                            <h2 className="text-lg font-extrabold text-slate-900">
-                                                Order Items
-                                            </h2>
-
-                                            <p className="text-sm text-slate-400 mt-1">
-                                                {order.orderitem.length}{" "}
-                                                {order.orderitem.length === 1
-                                                    ? "product"
-                                                    : "products"}
-                                            </p>
-
-                                        </div>
-
-                                    </div>
-
-                                    <div className="space-y-4">
-
+                                <div className="p-6">
+                                    <div className="space-y-6">
                                         {order.orderitem.map((item) => (
-
                                             <div
                                                 key={item._id}
-                                                className="group border border-slate-200 rounded-2xl p-4 sm:p-5 flex flex-col sm:flex-row gap-5 hover:border-indigo-200 hover:shadow-md transition"
+                                                className="flex flex-col sm:flex-row gap-6"
                                             >
-
                                                 {/* IMAGE */}
-
-                                                <div className="w-full sm:w-28 h-28 rounded-xl bg-slate-100 overflow-hidden shrink-0">
-
+                                                <div className="w-24 h-24 bg-slate-100 border border-slate-200 shrink-0">
                                                     <img
                                                         src={item.product?.images?.[0]?.url || "/placeholder-product.png"}
                                                         alt={item.product?.title || "Product"}
-                                                        className="w-full h-full object-cover group-hover:scale-105 transition duration-300"
+                                                        className="w-full h-full object-cover mix-blend-multiply"
                                                     />
-
                                                 </div>
 
                                                 {/* DETAILS */}
-
                                                 <div className="flex-1 min-w-0">
-
-                                                    <p className="text-xs uppercase tracking-wider font-bold text-indigo-500">
-                                                        {item.product?.category || "Product"}
+                                                    <p className="text-[10px] uppercase tracking-widest font-bold text-slate-400 mb-1">
+                                                        {item.product?.brand || item.product?.category || "Product"}
                                                     </p>
-
-                                                    <h3 className="text-lg font-bold text-slate-900 mt-1">
+                                                    <h3 className="text-base font-bold text-slate-900 line-clamp-1">
                                                         {item.product?.title || "Product unavailable"}
                                                     </h3>
-
-                                                    <div className="flex flex-wrap gap-5 mt-5">
-
+                                                    
+                                                    <div className="flex items-center gap-6 mt-4">
                                                         <div>
-
-                                                            <p className="text-xs text-slate-400">
-                                                                Quantity
-                                                            </p>
-
-                                                            <p className="font-bold text-slate-700 mt-1">
-                                                                ×
-                                                                {
-                                                                    item.quantity
-                                                                }
-                                                            </p>
-
+                                                            <p className="text-[10px] text-slate-400 uppercase tracking-widest font-bold">Qty</p>
+                                                            <p className="text-sm font-bold mt-1">{item.quantity}</p>
                                                         </div>
-
                                                         <div>
-
-                                                            <p className="text-xs text-slate-400">
-                                                                Unit Price
+                                                            <p className="text-[10px] text-slate-400 uppercase tracking-widest font-bold">Price</p>
+                                                            <p className="text-sm font-bold mt-1">
+                                                                ₹{Number(item.price || item.product?.price || 0).toLocaleString("en-IN")}
                                                             </p>
-
-                                                            <p className="font-bold text-slate-700 mt-1">
-                                                                ₹
-                                                                {Number(
-                                                                    item.product?.price || 0
-                                                                ).toLocaleString("en-IN")}
-                                                            </p>
-
                                                         </div>
-
                                                     </div>
-
                                                 </div>
 
-                                                {/* PRICE */}
-
-                                                <div className="sm:text-right sm:self-center">
-
-                                                    <p className="text-xs text-slate-400">
-                                                        Item Total
+                                                {/* ITEM TOTAL */}
+                                                <div className="sm:text-right sm:self-center border-t sm:border-t-0 sm:border-l border-slate-200 pt-4 sm:pt-0 sm:pl-6 mt-2 sm:mt-0">
+                                                    <p className="text-[10px] text-slate-400 uppercase tracking-widest font-bold">Item Total</p>
+                                                    <p className="text-lg font-black mt-1">
+                                                        ₹{((item.price || item.product?.price || 0) * item.quantity).toLocaleString("en-IN")}
                                                     </p>
-
-                                                    <p className="text-xl font-black text-slate-900 mt-1">
-                                                        ₹
-                                                        {(
-                                                            (item.product?.price || 0) *
-                                                            item.quantity
-                                                        ).toLocaleString("en-IN")}
-                                                    </p>
-
                                                 </div>
-
                                             </div>
-
                                         ))}
-
                                     </div>
-
                                 </div>
-
                             </div>
-
                         ))}
-
                     </div>
-
                 )}
-
             </main>
-
         </div>
     );
 }

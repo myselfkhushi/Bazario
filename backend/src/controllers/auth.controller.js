@@ -110,3 +110,30 @@ export const registerUser =asynchandler( async (req,res) =>{
     });
     });
 
+export const updateProfile = asynchandler(async (req, res) => {
+    const { name, email } = req.body;
+
+    const user = await User.findById(req.user._id);
+    if (!user) {
+        throw new ApiError("User not found", 404);
+    }
+
+    if (name) user.name = name;
+    if (email) {
+        // Check if email is taken by someone else
+        const emailExists = await User.findOne({ email });
+        if (emailExists && emailExists._id.toString() !== user._id.toString()) {
+            throw new ApiError("Email is already taken", 400);
+        }
+        user.email = email;
+    }
+
+    await user.save();
+
+    res.status(200).json({
+        success: true,
+        message: "Profile updated successfully",
+        user
+    });
+});
+

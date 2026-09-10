@@ -1,88 +1,71 @@
-import { useState, useEffect } from "react";
-import { ArrowRight } from "lucide-react";
-
-const banners = [
-    {
-        title: "Big Sale 2026",
-        subtitle: "Up to 70% OFF on Premium Electronics",
-        image: "https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?q=80&w=2000&auto=format&fit=crop",
-        cta: "Shop Electronics"
-    },
-    {
-        title: "Autumn Collection",
-        subtitle: "Trending Styles & Fashion for Everyone",
-        image: "https://images.unsplash.com/photo-1441986300917-64674bd600d8?q=80&w=2000&auto=format&fit=crop",
-        cta: "Explore Fashion"
-    },
-    {
-        title: "Home Essentials",
-        subtitle: "Upgrade Your Space with Modern Decor",
-        image: "https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?q=80&w=2000&auto=format&fit=crop",
-        cta: "Decorate Now"
-    },
-];
+import { Link } from "react-router-dom";
+import { ArrowRight, PlayCircle } from "lucide-react";
 
 function HeroSection() {
-    const [current, setCurrent] = useState(0);
-
-    useEffect(() => {
-        const interval = setInterval(() => {
-            setCurrent((prev) => (prev === banners.length - 1 ? 0 : prev + 1));
-        }, 5000); // 5 seconds timer
-        return () => clearInterval(interval);
-    }, []);
-
     return (
-        <div className="relative w-full h-[60vh] min-h-[450px] lg:h-[75vh] rounded-3xl overflow-hidden group shadow-2xl mb-12">
-            {banners.map((banner, index) => (
-                <div
-                    key={index}
-                    className={`absolute inset-0 w-full h-full transition-opacity duration-1000 ease-in-out ${
-                        index === current ? "opacity-100 z-10" : "opacity-0 z-0"
-                    }`}
-                >
-                    {/* Background Image */}
-                    <div 
-                        className="absolute inset-0 bg-cover bg-center transform hover:scale-105 transition-transform duration-[10s]"
-                        style={{ backgroundImage: `url(${banner.image})` }}
-                    />
-                    {/* Dark Gradient Overlay */}
-                    <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/50 to-transparent" />
-                    
-                    {/* Content */}
-                    <div className="absolute inset-0 flex flex-col justify-center px-8 sm:px-16 lg:px-24">
-                        <div className="max-w-xl text-left transform transition-all duration-700 translate-y-0 opacity-100">
-                            <span className="inline-block py-1 px-3 rounded-full bg-blue-500/20 text-blue-300 font-semibold tracking-widest text-sm uppercase mb-4 border border-blue-500/30 backdrop-blur-sm">
-                                ShopHub Exclusive
-                            </span>
-                            <h1 className="text-4xl sm:text-5xl md:text-6xl font-extrabold text-white leading-tight mb-4 drop-shadow-lg">
-                                {banner.title}
-                            </h1>
-                            <p className="text-lg sm:text-xl text-gray-200 mb-8 font-light drop-shadow-md">
-                                {banner.subtitle}
-                            </p>
-                            <button className="flex items-center gap-2 bg-white text-gray-900 px-8 py-3.5 rounded-full font-bold hover:bg-blue-600 hover:text-white transition-all duration-300 transform hover:-translate-y-1 shadow-[0_10px_20px_rgba(0,0,0,0.2)]">
-                                {banner.cta} <ArrowRight className="w-5 h-5" />
-                            </button>
+        <section className="relative w-full rounded-3xl mb-16 sm:mb-24 overflow-hidden bg-slate-50 border border-slate-200">
+            
+            <div className="flex flex-col lg:flex-row items-center min-h-[600px]">
+                
+                {/* ── Left Content (Text) ── */}
+                <div className="flex-1 px-8 sm:px-16 md:px-20 py-16 lg:py-0 z-10 flex flex-col justify-center">
+
+                    <h1 className="text-5xl sm:text-6xl md:text-7xl font-black text-slate-900 leading-[1.1] tracking-tighter mb-6" style={{ fontFamily: "var(--font-heading)" }}>
+                        Power. <br/>
+                        <span className="text-slate-400">Perfected.</span>
+                    </h1>
+
+                    <p className="text-base sm:text-lg text-slate-600 mb-10 max-w-md leading-relaxed font-medium">
+                        Experience the next generation of premium electronics. Unrivaled performance meets stunning, minimalist design.
+                    </p>
+
+                    <div className="flex flex-wrap items-center gap-4">
+                        <Link 
+                            to="/shop?category=Electronics"
+                            className="flex items-center justify-center gap-2 px-8 py-4 bg-purple-600 hover:bg-purple-700 text-white font-bold tracking-widest uppercase text-xs rounded-full transition-all shadow-[0_8px_30px_rgb(147,51,234,0.3)] hover:shadow-[0_8px_30px_rgb(147,51,234,0.5)] hover:-translate-y-0.5"
+                        >
+                            Shop Pro Series
+                        </Link>
+                        
+                        <button className="flex items-center justify-center gap-2 px-8 py-4 bg-white hover:bg-slate-50 text-slate-900 border border-slate-200 font-bold tracking-widest uppercase text-xs rounded-full transition-all">
+                            <PlayCircle className="w-4 h-4 text-purple-600" />
+                            Watch Film
+                        </button>
+                    </div>
+
+                    {/* Trust indicators */}
+                    <div className="mt-12 pt-8 border-t border-slate-200 flex items-center gap-8">
+                        <div>
+                            <p className="text-2xl font-black text-slate-900 font-mono tracking-tighter">48hr</p>
+                            <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mt-1">Battery Life</p>
+                        </div>
+                        <div className="w-px h-8 bg-slate-200"></div>
+                        <div>
+                            <p className="text-2xl font-black text-slate-900 font-mono tracking-tighter">OLED</p>
+                            <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mt-1">Display Tech</p>
                         </div>
                     </div>
                 </div>
-            ))}
 
-            {/* Navigation Dots */}
-            <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-20 flex gap-3">
-                {banners.map((_, index) => (
-                    <button
-                        key={index}
-                        onClick={() => setCurrent(index)}
-                        className={`w-3 h-3 rounded-full transition-all duration-300 ${
-                            index === current ? "bg-blue-500 w-8" : "bg-white/50 hover:bg-white/80"
-                        }`}
-                        aria-label={`Go to slide ${index + 1}`}
+                {/* ── Right Content (Image) ── */}
+                <div className="flex-1 relative w-full h-[400px] lg:h-[600px] bg-slate-100 flex items-center justify-center overflow-hidden border-l border-slate-200">
+                    
+                    {/* Decorative abstract shape behind product */}
+                    <div className="absolute w-[120%] h-[120%] bg-gradient-to-tr from-purple-100/50 to-transparent rounded-full blur-3xl opacity-60"></div>
+                    
+                    {/* The premium colored product photo */}
+                    <img
+                        src="https://images.unsplash.com/photo-1611186871348-b1ce696e52c9?q=80&w=1000&auto=format&fit=crop"
+                        alt="Premium Electronics"
+                        className="relative z-10 w-full h-full object-cover transform hover:scale-105 transition-transform duration-1000 ease-out"
+                        loading="eager"
                     />
-                ))}
+                    
+                    <div className="absolute inset-0 bg-gradient-to-t from-slate-900/20 to-transparent mix-blend-multiply"></div>
+                </div>
+
             </div>
-        </div>
+        </section>
     );
 }
 

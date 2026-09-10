@@ -51,6 +51,41 @@ const productSchema = new mongoose.Schema({
             type:Number,
             default:0,
         }, 
+        brand:{
+            type:String,
+            default:"Bazario Official"
+        },
+        mrp:{
+            type:Number,
+        },
+        warranty:{
+            type:String,
+            default:"1 Year Brand Warranty"
+        },
+        returnPolicy:{
+            type:String,
+            default:"7 Days Doorstep Replacement"
+        },
+        highlights:[
+            {
+                type:String
+            }
+        ],
+        specifications:[
+            {
+                key:{ type: String },
+                value:{ type: String }
+            }
+        ],
+        color:{
+            type:String
+        },
+        size:{
+            type:String
+        },
+        weight:{
+            type:String
+        },
 },
 {
     timestamps:true
