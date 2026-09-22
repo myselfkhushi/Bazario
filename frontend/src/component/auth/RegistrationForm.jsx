@@ -38,6 +38,10 @@ function RegistrationForm() {
                 password: data.password,
             });
 
+            if (response.token) {
+                localStorage.setItem("token", response.token);
+            }
+
             dispatch(setUser(response.user));
             toast.success("Account created successfully! Welcome to Bazario!");
             navigate("/");

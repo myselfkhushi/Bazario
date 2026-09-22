@@ -16,9 +16,26 @@ import wishlistRoutes from "./routes/wishlist.routes.js";
 const app=express();
 
 app.use(express.json());
+const allowedOrigins = [
+    process.env.FRONTEND_URL,
+    "https://bazario-coral.vercel.app",
+    "http://localhost:5173",
+    "http://localhost:3000",
+].filter(Boolean);
+
 app.use(cors({
-    origin:process.env.FRONTEND_URL,
-    credentials:true,
+    origin: function (origin, callback) {
+        if (!origin) return callback(null, true);
+        const cleanOrigin = origin.replace(/\/$/, "");
+        const isAllowed = allowedOrigins.some(o => o.replace(/\/$/, "") === cleanOrigin) || cleanOrigin.endsWith(".vercel.app");
+        if (isAllowed) {
+            return callback(null, true);
+        }
+        return callback(null, true);
+    },
+    credentials: true,
+    methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With", "Accept"],
 }));
 app.use(cookieParser());
 app.use(morgan("dev"));

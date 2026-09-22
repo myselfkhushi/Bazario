@@ -90,33 +90,58 @@ export const createProduct = asynchandler(async (req, res) => {
 export const getallproducts = asynchandler(async (req, res) => {
     const { search, category, brand, minPrice, maxPrice, sort } = req.query;
 
-    let query = {};
+    const andConditions = [];
 
     // 1. Search
-    if (search) {
-        query.$or = [
-            { title: { $regex: search, $options: "i" } },
-            { description: { $regex: search, $options: "i" } }
-        ];
+    if (search && search.trim()) {
+        const s = search.trim();
+        andConditions.push({
+            $or: [
+                { title: { $regex: s, $options: "i" } },
+                { description: { $regex: s, $options: "i" } },
+                { brand: { $regex: s, $options: "i" } },
+                { category: { $regex: s, $options: "i" } }
+            ]
+        });
     }
 
     // 2. Category
     if (category && category !== "All") {
-        query.category = category;
+        const trimmedCat = category.trim();
+        if (trimmedCat.toLowerCase() === "home" || trimmedCat.toLowerCase() === "home & living") {
+            andConditions.push({ category: { $in: [/^home$/i, /^home & living$/i] } });
+        } else {
+            andConditions.push({
+                category: { $regex: new RegExp(`^${trimmedCat.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, "i") }
+            });
+        }
     }
 
     // 3. Brand
     if (brand && brand !== "All") {
-        const brands = brand.split(",").map(b => b.trim());
-        query.brand = { $in: brands };
+        const brands = brand.split(",").map(b => b.trim()).filter(Boolean);
+        if (brands.length > 0) {
+            const brandRegexes = brands.map(b => new RegExp(`^${b.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, "i"));
+            const titleWordRegexes = brands.map(b => new RegExp(`(^|[^a-zA-Z0-9])${b.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}([^a-zA-Z0-9]|$)`, "i"));
+
+            andConditions.push({
+                $or: [
+                    { brand: { $in: brandRegexes } },
+                    { title: { $in: titleWordRegexes } }
+                ]
+            });
+        }
     }
 
     // 4. Price range
     if (minPrice || maxPrice) {
-        query.price = {};
-        if (minPrice) query.price.$gte = Number(minPrice);
-        if (maxPrice) query.price.$lte = Number(maxPrice);
+        const priceQuery = {};
+        if (minPrice) priceQuery.$gte = Number(minPrice);
+        if (maxPrice) priceQuery.$lte = Number(maxPrice);
+        andConditions.push({ price: priceQuery });
     }
+
+    const query = andConditions.length > 0 ? { $and: andConditions } : {};
 
     // 5. Sorting logic
     let sortObj = { createdAt: -1 }; // default to newest
@@ -127,6 +152,12 @@ export const getallproducts = asynchandler(async (req, res) => {
                 break;
             case "price_desc":
                 sortObj = { price: -1 };
+                break;
+            case "brand_asc":
+                sortObj = { brand: 1, title: 1 };
+                break;
+            case "brand_desc":
+                sortObj = { brand: -1, title: 1 };
                 break;
             case "newest":
                 sortObj = { createdAt: -1 };
@@ -284,20 +315,44 @@ export const getproductwithpagination= asynchandler(async(req,res)=>{
     
 })
 
-export const getproductwithcategory=asynchandler(async(req,res)=>{
-    
-        const product=await Product.find({
+export const getproductwithcategory = asynchandler(async (req, res) => {
+    const categoryParam = req.params.category ? req.params.category.trim() : "";
+    let query = {};
+    if (categoryParam.toLowerCase() === "home" || categoryParam.toLowerCase() === "home & living") {
+        query.category = { $in: [/^home$/i, /^home & living$/i] };
+    } else {
+        query.category = { $regex: new RegExp(`^${categoryParam.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, "i") };
+    }
 
-            category:req.params.category
-        })
+    const product = await Product.find(query);
 
-        res.status(200).json({
-            success:true,
-            count:product.length,
-            product,
-        })
-   
-})
+    res.status(200).json({
+        success: true,
+        count: product.length,
+        product,
+    });
+});
+
+export const getproductbrands = asynchandler(async (req, res) => {
+    const brands = await Product.distinct("brand");
+    const validBrands = brands
+        .filter(b => b && typeof b === "string" && b.trim().length > 0)
+        .map(b => b.trim());
+
+    // Deduplicate case-insensitively while preserving neat casing
+    const uniqueMap = new Map();
+    for (const b of validBrands) {
+        const lower = b.toLowerCase();
+        if (!uniqueMap.has(lower)) {
+            uniqueMap.set(lower, b);
+        }
+    }
+
+    res.status(200).json({
+        success: true,
+        brands: Array.from(uniqueMap.values()),
+    });
+});
 
 export const getmyproduct= asynchandler( async(req,res)=>{
    

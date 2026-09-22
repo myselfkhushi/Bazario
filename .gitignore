@@ -20,6 +20,7 @@ build/
 
 # Testing, Scratch and Seed files
 backend/src/database/seed.js
+backend/src/database/updateProductBrands.js
 test_*.js
 scratchpad_*.md
 *.log

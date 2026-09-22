@@ -4,14 +4,41 @@ import { useSearchParams } from "react-router-dom";
 import { Search, SlidersHorizontal, ChevronDown, X, Filter } from "lucide-react";
 import ProductCard from "../component/product/ProductCard.jsx";
 import ProductSkeleton from "../component/product/ProductSkeleton.jsx";
-import { getAllProducts } from "../features/product/productAPI";
+import { getAllProducts, getProductBrands } from "../features/product/productAPI";
 
-const CATEGORIES = ["All", "Electronics", "Fashion", "Home", "Books", "Beauty", "Sports"];
-const BRANDS = ["All", "Apple", "Samsung", "Sony", "Nike", "Adidas", "Bazario Official"];
+const CATEGORIES = [
+    "All",
+    "Electronics",
+    "Fashion",
+    "Footwear",
+    "Watches",
+    "Home & Living",
+    "Beauty",
+    "Health",
+    "Sports",
+    "Books",
+    "Toys"
+];
+
+const DEFAULT_BRANDS = [
+    "All", 
+    "Apple", 
+    "Samsung", 
+    "Sony", 
+    "Nike", 
+    "Adidas", 
+    "Zara", 
+    "Levi's", 
+    "H&M", 
+    "Bazario Official"
+];
+
 const SORTS = [
     { label: "Newest Arrivals", value: "newest" },
     { label: "Price: Low to High", value: "price_asc" },
-    { label: "Price: High to Low", value: "price_desc" }
+    { label: "Price: High to Low", value: "price_desc" },
+    { label: "Brand: A to Z", value: "brand_asc" },
+    { label: "Brand: Z to A", value: "brand_desc" }
 ];
 
 function Shop() {
@@ -26,28 +53,104 @@ function Shop() {
     const [maxPrice, setMaxPrice] = useState(searchParams.get("maxPrice") || "");
     const [sort, setSort] = useState(searchParams.get("sort") || "newest");
 
+    const [availableBrands, setAvailableBrands] = useState(DEFAULT_BRANDS);
     const [products, setProducts] = useState([]);
     const [loading, setLoading] = useState(true);
     const [showMobileFilters, setShowMobileFilters] = useState(false);
 
-    const updateUrlParams = () => {
-        const params = new URLSearchParams();
-        if (search) params.set("search", search);
-        if (category && category !== "All") params.set("category", category);
-        if (brand && brand !== "All") params.set("brand", brand);
-        if (minPrice) params.set("minPrice", minPrice);
-        if (maxPrice) params.set("maxPrice", maxPrice);
-        if (sort && sort !== "newest") params.set("sort", sort);
+    // Fetch dynamic catalog brands on mount
+    useEffect(() => {
+        const fetchBrands = async () => {
+            try {
+                const res = await getProductBrands();
+                if (res.brands && res.brands.length > 0) {
+                    const combined = ["All", ...new Set([...DEFAULT_BRANDS.slice(1), ...res.brands])];
+                    setAvailableBrands(combined);
+                }
+            } catch (error) {
+                console.error("Failed to load catalog brands:", error);
+            }
+        };
+        fetchBrands();
+    }, []);
+
+    // Synchronize URL search params to component state when URL changes (e.g. from navbar clicks)
+    useEffect(() => {
+        const urlSearch = searchParams.get("search") || "";
+        let urlCategory = searchParams.get("category") || "All";
+        if (urlCategory.toLowerCase() === "home") urlCategory = "Home & Living";
+        const urlBrand = searchParams.get("brand") || "All";
+        const urlMinPrice = searchParams.get("minPrice") || "";
+        const urlMaxPrice = searchParams.get("maxPrice") || "";
+        const urlSort = searchParams.get("sort") || "newest";
+
+        setSearch(urlSearch);
+        setCategory(urlCategory);
+        setBrand(urlBrand);
+        setMinPrice(urlMinPrice);
+        setMaxPrice(urlMaxPrice);
+        setSort(urlSort);
+    }, [searchParams]);
+
+    // Handle immediate Category chip filter click
+    const handleCategoryClick = (newCat) => {
+        setCategory(newCat);
+        const params = new URLSearchParams(searchParams);
+        if (newCat && newCat !== "All") {
+            params.set("category", newCat);
+        } else {
+            params.delete("category");
+        }
         setSearchParams(params);
     };
 
-    // Debounce search and URL sync
+    // Handle immediate Brand chip filter click
+    const handleBrandClick = (newBrand) => {
+        setBrand(newBrand);
+        const params = new URLSearchParams(searchParams);
+        if (newBrand && newBrand !== "All") {
+            params.set("brand", newBrand);
+        } else {
+            params.delete("brand");
+        }
+        setSearchParams(params);
+    };
+
+    // Handle Sort dropdown change
+    const handleSortChange = (newSort) => {
+        setSort(newSort);
+        const params = new URLSearchParams(searchParams);
+        if (newSort && newSort !== "newest") {
+            params.set("sort", newSort);
+        } else {
+            params.delete("sort");
+        }
+        setSearchParams(params);
+    };
+
+    // Debounce search text and price filter URL updates
     useEffect(() => {
         const handler = setTimeout(() => {
-            updateUrlParams();
-        }, 300);
+            const currentSearch = searchParams.get("search") || "";
+            const currentMin = searchParams.get("minPrice") || "";
+            const currentMax = searchParams.get("maxPrice") || "";
+
+            if (search !== currentSearch || minPrice !== currentMin || maxPrice !== currentMax) {
+                const params = new URLSearchParams(searchParams);
+                if (search.trim()) params.set("search", search.trim());
+                else params.delete("search");
+
+                if (minPrice) params.set("minPrice", minPrice);
+                else params.delete("minPrice");
+
+                if (maxPrice) params.set("maxPrice", maxPrice);
+                else params.delete("maxPrice");
+
+                setSearchParams(params);
+            }
+        }, 350);
         return () => clearTimeout(handler);
-    }, [search, category, brand, minPrice, maxPrice, sort]);
+    }, [search, minPrice, maxPrice]);
 
     // Fetch products when URL changes
     useEffect(() => {
@@ -90,8 +193,9 @@ function Shop() {
         if (category !== "All") count++;
         if (brand !== "All") count++;
         if (minPrice || maxPrice) count++;
+        if (search) count++;
         return count;
-    }, [category, brand, minPrice, maxPrice]);
+    }, [category, brand, minPrice, maxPrice, search]);
 
     return (
         <div className="bg-slate-50 min-h-screen text-slate-900 font-sans pb-24">
@@ -180,7 +284,7 @@ function Shop() {
                                     {CATEGORIES.map(cat => (
                                         <button 
                                             key={cat}
-                                            onClick={() => setCategory(cat)}
+                                            onClick={() => handleCategoryClick(cat)}
                                             className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all duration-200 ${
                                                 category === cat 
                                                 ? 'bg-purple-600 text-white shadow-md shadow-purple-200' 
@@ -199,10 +303,10 @@ function Shop() {
                                     Brands
                                 </label>
                                 <div className="flex flex-wrap gap-2">
-                                    {BRANDS.map(b => (
+                                    {availableBrands.map(b => (
                                         <button 
                                             key={b}
-                                            onClick={() => setBrand(b)}
+                                            onClick={() => handleBrandClick(b)}
                                             className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all duration-200 ${
                                                 brand === b 
                                                 ? 'bg-slate-900 text-white shadow-md shadow-slate-300' 
@@ -252,7 +356,7 @@ function Shop() {
                     <div className="flex-1">
                         
                         {/* Sort & Info Bar */}
-                        <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-8 gap-4 bg-white px-6 py-4 rounded-2xl shadow-sm border border-slate-200">
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-4 bg-white px-6 py-4 rounded-2xl shadow-sm border border-slate-200">
                             <p className="text-sm font-medium text-slate-500">
                                 Showing <span className="font-bold text-slate-900">{products.length}</span> exceptional products
                             </p>
@@ -262,7 +366,7 @@ function Shop() {
                                 <div className="relative">
                                     <select 
                                         value={sort}
-                                        onChange={(e) => setSort(e.target.value)}
+                                        onChange={(e) => handleSortChange(e.target.value)}
                                         className="appearance-none bg-slate-50 border border-slate-200 py-2 pl-4 pr-10 rounded-xl text-sm font-semibold text-slate-700 focus:outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-100 cursor-pointer transition-all"
                                     >
                                         {SORTS.map(s => (
@@ -273,6 +377,67 @@ function Shop() {
                                 </div>
                             </div>
                         </div>
+
+                        {/* Active Filter Chips Bar */}
+                        {activeFilterCount > 0 && (
+                            <div className="flex flex-wrap items-center gap-2 mb-6">
+                                <span className="text-xs font-bold uppercase tracking-wider text-slate-400 mr-1">Active:</span>
+                                {category !== "All" && (
+                                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl text-xs font-semibold bg-purple-50 text-purple-700 border border-purple-200">
+                                        Category: {category}
+                                        <button 
+                                            onClick={() => handleCategoryClick("All")}
+                                            className="hover:text-purple-900 cursor-pointer"
+                                            title="Clear category"
+                                        >
+                                            <X className="w-3.5 h-3.5" />
+                                        </button>
+                                    </span>
+                                )}
+                                {brand !== "All" && (
+                                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl text-xs font-semibold bg-slate-900 text-white shadow-xs">
+                                        Brand: {brand}
+                                        <button 
+                                            onClick={() => handleBrandClick("All")}
+                                            className="hover:text-red-300 cursor-pointer"
+                                            title="Clear brand"
+                                        >
+                                            <X className="w-3.5 h-3.5" />
+                                        </button>
+                                    </span>
+                                )}
+                                {search && (
+                                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl text-xs font-semibold bg-slate-100 text-slate-700 border border-slate-200">
+                                        Search: "{search}"
+                                        <button 
+                                            onClick={() => setSearch("")}
+                                            className="hover:text-slate-950 cursor-pointer"
+                                            title="Clear search"
+                                        >
+                                            <X className="w-3.5 h-3.5" />
+                                        </button>
+                                    </span>
+                                )}
+                                {(minPrice || maxPrice) && (
+                                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl text-xs font-semibold bg-slate-100 text-slate-700 border border-slate-200">
+                                        ₹{minPrice || 0} - ₹{maxPrice || "Any"}
+                                        <button 
+                                            onClick={() => { setMinPrice(""); setMaxPrice(""); }}
+                                            className="hover:text-slate-950 cursor-pointer"
+                                            title="Clear price filter"
+                                        >
+                                            <X className="w-3.5 h-3.5" />
+                                        </button>
+                                    </span>
+                                )}
+                                <button
+                                    onClick={clearFilters}
+                                    className="text-xs font-semibold text-purple-600 hover:text-purple-700 underline underline-offset-2 ml-2 cursor-pointer"
+                                >
+                                    Reset All
+                                </button>
+                            </div>
+                        )}
 
                         {/* Product Grid */}
                         {loading ? (

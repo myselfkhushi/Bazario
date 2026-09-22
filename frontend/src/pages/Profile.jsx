@@ -64,9 +64,12 @@ function Profile() {
     const handleSignOut = async () => {
         try {
             await logoutUser();
+            localStorage.removeItem("token");
             dispatch(logout());
             toast.success("Signed out successfully");
         } catch (error) {
+            localStorage.removeItem("token");
+            dispatch(logout());
             toast.error("Logout failed");
         }
     };

@@ -41,7 +41,7 @@ export const createProduct=async (formData) =>{
 
 
 export const updateProduct=async(id,formData)=>{
-    const {data} =await api.put(`/product/${id}`,formData);
+    const {data} =await api.put(`/products/${id}`,formData);
     return data;
 }
 
@@ -49,3 +49,8 @@ export const deleteProduct=async(id)=>{
     const {data} =await api.delete(`/products/${id}`);
     return data;
 }
+
+export const getProductBrands = async () => {
+    const response = await api.get("/products/brands");
+    return response.data;
+};

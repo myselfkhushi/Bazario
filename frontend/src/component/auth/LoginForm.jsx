@@ -45,6 +45,10 @@ function LoginForm() {
                 password: data.password,
             });
 
+            if (response.token) {
+                localStorage.setItem("token", response.token);
+            }
+
             dispatch(setUser(response.user));
             handleLoginSuccess(response.user);
         } catch (error) {
@@ -67,6 +71,9 @@ function LoginForm() {
             dispatch(setLoading(true));
 
             const response = await loginUser({ email, password });
+            if (response.token) {
+                localStorage.setItem("token", response.token);
+            }
             dispatch(setUser(response.user));
             handleLoginSuccess(response.user);
         } catch (error) {

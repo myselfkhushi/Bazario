@@ -27,7 +27,10 @@ function App() {
         const cartResponse = await getMyCart();
         dispatch(setCart(cartResponse.cart));
       } catch (error) {
-        // Suppress errors for unauthenticated initial load
+        // Suppress errors for unauthenticated initial load and remove invalid token
+        if (error.response?.status === 401 || error.response?.status === 403) {
+          localStorage.removeItem("token");
+        }
       } finally {
         setIsAppLoading(false);
       }

@@ -35,7 +35,7 @@ export const addtocart =asynchandler( async (req,res)=>{
             existingcartitem.quantity+=quantity;
 
             await existingcartitem.save();
-            await cartitem.populate("product");
+            await existingcartitem.populate("product");
 
             return res.status(200).json({
                 success:true,

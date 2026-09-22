@@ -25,6 +25,11 @@ const authSlice=createSlice({
             state.user=null;
             state.isAuthenticated=false;
             state.error=null;
+            try {
+                localStorage.removeItem("token");
+            } catch (e) {
+                // ignore
+            }
         },
 
         setError:(state,action)=>{

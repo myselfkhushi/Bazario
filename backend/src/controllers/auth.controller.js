@@ -24,15 +24,19 @@ export const registerUser =asynchandler( async (req,res) =>{
      
     const token =genratetoken(user._id);
 
-        res.cookie("token",token,{
-            httpOnly:true,
-            secure:process.env.NODE_ENV === "production",
-            sameSite:"strict",
-            maxAge:7*24*60*60*1000,
-        });
-       res.status(200).json({
-        success:true,
-        message:"user successfully registered",
+    const isProduction = process.env.NODE_ENV === "production";
+    const cookieOptions = {
+        httpOnly: true,
+        secure: isProduction,
+        sameSite: isProduction ? "none" : "lax",
+        maxAge: 7 * 24 * 60 * 60 * 1000,
+    };
+
+    res.cookie("token", token, cookieOptions);
+    res.status(200).json({
+        success: true,
+        message: "user successfully registered",
+        token,
         user,
     });
 });
@@ -62,13 +66,16 @@ export const registerUser =asynchandler( async (req,res) =>{
     const token =genratetoken(user._id);
 
     user.password=undefined; 
-    
-    res.cookie("token",token,{
-        httpOnly:true,
-        secure:process.env.NODE_ENV === "production",
-        sameSite:"strict",
-        maxAge:7*24*60*60*1000,
-    });
+
+    const isProduction = process.env.NODE_ENV === "production";
+    const cookieOptions = {
+        httpOnly: true,
+        secure: isProduction,
+        sameSite: isProduction ? "none" : "lax",
+        maxAge: 7 * 24 * 60 * 60 * 1000,
+    };
+
+    res.cookie("token", token, cookieOptions);
      res.status(200).json({
         success:true,
         message:"user login successfully",
@@ -89,10 +96,11 @@ export const registerUser =asynchandler( async (req,res) =>{
     });
 
     export const logoutUser = asynchandler(async (req, res) => {
+    const isProduction = process.env.NODE_ENV === "production";
     res.clearCookie("token", {
         httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "strict",
+        secure: isProduction,
+        sameSite: isProduction ? "none" : "lax",
     });
 
     res.status(200).json({

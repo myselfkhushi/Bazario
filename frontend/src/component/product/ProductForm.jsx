@@ -30,7 +30,7 @@ export default function ProductForm({ onSubmit, defaultValues = {}, isSubmitting
     defaultValues: {
       title: defaultValues.title || "",
       category: defaultValues.category || "",
-      brand: defaultValues.brand || "Bazario Official",
+      brand: defaultValues.brand || "",
       description: defaultValues.description || "",
       price: defaultValues.price || "",
       mrp: defaultValues.mrp || "",
@@ -111,13 +111,17 @@ export default function ProductForm({ onSubmit, defaultValues = {}, isSubmitting
                 className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 bg-white"
                 {...register("category", { required: true })}
               >
-                <option value="">Select Primary Category</option>
-                <option value="Electronics">Electronics & Tech</option>
-                <option value="Fashion">Fashion & Apparel</option>
-                <option value="Home">Home & Kitchen</option>
-                <option value="Books">Books & Learning</option>
-                <option value="Beauty">Beauty & Skincare</option>
-                <option value="Sports">Sports & Fitness</option>
+                <option value="">Select Category</option>
+                <option value="Electronics">Electronics</option>
+                <option value="Fashion">Fashion</option>
+                <option value="Footwear">Footwear</option>
+                <option value="Watches">Watches</option>
+                <option value="Home & Living">Home & Living</option>
+                <option value="Beauty">Beauty</option>
+                <option value="Health">Health</option>
+                <option value="Sports">Sports</option>
+                <option value="Books">Books</option>
+                <option value="Toys">Toys</option>
               </select>
             </div>
 
@@ -128,10 +132,23 @@ export default function ProductForm({ onSubmit, defaultValues = {}, isSubmitting
               </label>
               <input
                 type="text"
-                placeholder="e.g. Sony, Apple, Nike, Bazario Official"
+                list="brand-options-list"
+                placeholder="e.g. Apple, Sony, Nike, Bazario Official"
                 className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
                 {...register("brand")}
               />
+              <datalist id="brand-options-list">
+                <option value="Apple" />
+                <option value="Samsung" />
+                <option value="Sony" />
+                <option value="Nike" />
+                <option value="Adidas" />
+                <option value="Zara" />
+                <option value="Levi's" />
+                <option value="H&M" />
+                <option value="IKEA" />
+                <option value="Bazario Official" />
+              </datalist>
             </div>
 
             {/* Description */}

@@ -52,11 +52,14 @@ export default function Navbar() {
   const handleLogout = async () => {
     try {
       await logoutUser();
+      localStorage.removeItem("token");
       dispatch(logout());
       toast.success("Signed out successfully");
       navigate("/login");
       setOpenProfile(false);
     } catch (error) {
+      localStorage.removeItem("token");
+      dispatch(logout());
       toast.error("Logout failed");
     }
   };
@@ -128,7 +131,7 @@ export default function Navbar() {
     { label: "Fashion", path: "/shop?category=Fashion" },
     { label: "Footwear", path: "/shop?category=Footwear" },
     { label: "Watches", path: "/shop?category=Watches" },
-    { label: "Home & Living", path: "/shop?category=Home" },
+    { label: "Home & Living", path: "/shop?category=Home & Living" },
     { label: "Beauty", path: "/shop?category=Beauty" },
     { label: "Health", path: "/shop?category=Health" },
     { label: "Sports", path: "/shop?category=Sports" },
