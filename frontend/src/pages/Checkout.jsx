@@ -174,7 +174,7 @@ function Checkout() {
             const response = await createPaymentOrder();
 
             const option = {
-                key: import.meta.env.VITE_RAZORPAY_KEY_ID,
+                key: response.keyId || import.meta.env.VITE_RAZORPAY_KEY_ID || "rzp_test_T3u8OApYJFjtRj",
                 amount: response.razorpayOrder.amount,
                 currency: response.razorpayOrder.currency,
                 order_id: response.razorpayOrder.id,

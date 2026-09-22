@@ -36,9 +36,10 @@ export const createPaymentOrder= asynchandler(async(req,res)=>{
     })
 
     res.status(200).json({
-    success: true,
-    razorpayOrder,
-    payment,
+        success: true,
+        razorpayOrder,
+        payment,
+        keyId: process.env.RAZORPAY_KEY_ID || "rzp_test_T3u8OApYJFjtRj",
     });
 });
 
