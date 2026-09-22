@@ -198,47 +198,7 @@ function Shop() {
     }, [category, brand, minPrice, maxPrice, search]);
 
     return (
-        <div className="bg-slate-50 min-h-screen text-slate-900 font-sans pb-24">
-            
-            {/* ── Premium Modern Header ── */}
-            <div className="bg-white shadow-sm mb-8 relative z-10">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 lg:py-16">
-                    <div className="flex flex-col md:flex-row md:items-end justify-between gap-8">
-                        <div>
-                            <h1 className="text-4xl sm:text-5xl font-extrabold tracking-tight text-slate-900" style={{ fontFamily: "var(--font-heading)" }}>
-                                The Collection
-                            </h1>
-                            <p className="text-slate-500 mt-3 text-base sm:text-lg max-w-xl">
-                                Discover our meticulously curated selection of premium products.
-                            </p>
-                        </div>
-                        
-                        {/* Floating Modern Search Input */}
-                        <div className="w-full md:w-96 relative group">
-                            <div className="absolute inset-0 bg-purple-600/5 rounded-2xl blur-xl group-focus-within:bg-purple-600/15 transition-all duration-300"></div>
-                            <div className="relative bg-white rounded-2xl shadow-sm border border-slate-200 focus-within:border-purple-400 focus-within:ring-4 focus-within:ring-purple-100 transition-all duration-300 flex items-center overflow-hidden">
-                                <Search className="w-5 h-5 text-slate-400 ml-4 shrink-0" />
-                                <input 
-                                    type="text" 
-                                    value={search}
-                                    onChange={(e) => setSearch(e.target.value)}
-                                    placeholder="Search everything..."
-                                    className="w-full py-3.5 px-3 bg-transparent text-sm font-medium text-slate-900 placeholder-slate-400 focus:outline-none border-none ring-0"
-                                />
-                                {search && (
-                                    <button 
-                                        onClick={() => setSearch("")}
-                                        className="p-3 text-slate-400 hover:text-slate-900 transition-colors"
-                                    >
-                                        <X className="w-4 h-4" />
-                                    </button>
-                                )}
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
+        <div className="bg-slate-50 min-h-screen text-slate-900 font-sans pb-24 pt-6 sm:pt-8">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div className="flex flex-col lg:flex-row gap-10">
                     
@@ -273,6 +233,31 @@ function Shop() {
                                         Clear All
                                     </button>
                                 )}
+                            </div>
+
+                            {/* Search Filter Input */}
+                            <div>
+                                <label className="block text-xs font-bold uppercase tracking-widest text-slate-400 mb-3">
+                                    Search
+                                </label>
+                                <div className="relative">
+                                    <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                                    <input 
+                                        type="text" 
+                                        value={search}
+                                        onChange={(e) => setSearch(e.target.value)}
+                                        placeholder="Filter products..."
+                                        className="w-full py-2.5 pl-10 pr-8 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-900 placeholder-slate-400 focus:outline-none focus:bg-white focus:border-purple-400 focus:ring-2 focus:ring-purple-100 transition-all"
+                                    />
+                                    {search && (
+                                        <button 
+                                            onClick={() => setSearch("")}
+                                            className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700"
+                                        >
+                                            <X className="w-3.5 h-3.5" />
+                                        </button>
+                                    )}
+                                </div>
                             </div>
 
                             {/* Modern Chip Filters for Category */}

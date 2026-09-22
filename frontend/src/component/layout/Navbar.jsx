@@ -18,7 +18,7 @@ import {
   Sparkles,
   ArrowRight,
 } from "lucide-react";
-import axios from "axios";
+import api from "../../api/axios";
 
 import { logoutUser } from "../../features/auth/authAPI";
 import { logout } from "../../features/auth/authSlice";
@@ -95,7 +95,7 @@ export default function Navbar() {
       setIsSearching(true);
       try {
         // Fetch products matching search
-        const { data } = await axios.get(`http://localhost:5000/api/v1/product/allproduct?search=${search}`);
+        const { data } = await api.get(`/products?search=${encodeURIComponent(search.trim())}`);
         if (data.success) {
           // Limit to 5 suggestions
           setSuggestions(data.products.slice(0, 5));
