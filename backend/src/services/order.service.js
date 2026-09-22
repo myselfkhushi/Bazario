@@ -3,13 +3,17 @@ import Order from "../models/order.model.js";
 import Product from "../models/product.model.js";
 import ApiError from "../utils/apierror.js";
 
-export const createOrderFromCart=async(userId)=>{
+export const createOrderFromCart=async(userId, shippingAddress)=>{
    const cartItem=await Cart.find({
     user:userId,
    }).populate("product");
 
    if(cartItem.length === 0){
     throw new ApiError("cart is empty",400);
+   }
+
+   if(!shippingAddress || !shippingAddress.fullName || !shippingAddress.phone || !shippingAddress.street || !shippingAddress.city || !shippingAddress.state || !shippingAddress.pincode){
+       throw new ApiError("Complete shipping address is required", 400);
    }
 
    const orderItem=[];
@@ -36,7 +40,15 @@ export const createOrderFromCart=async(userId)=>{
     const order=await Order.create({
       user:userId,
       orderitem:orderItem,
-      totalamount:totalAmount
+      totalamount:totalAmount,
+      shippingAddress: {
+        fullName: shippingAddress.fullName.trim(),
+        phone: shippingAddress.phone.trim(),
+        street: shippingAddress.street.trim(),
+        city: shippingAddress.city.trim(),
+        state: shippingAddress.state.trim(),
+        pincode: shippingAddress.pincode.trim(),
+      },
     });
 
     for(const item of cartItem){

@@ -5,6 +5,7 @@ import {
     FaArrowRight,
     FaReceipt,
 } from "react-icons/fa";
+import { MapPin } from "lucide-react";
 import { useDispatch, useSelector } from "react-redux";
 
 import { getMyOrders } from "../../features/order/orderAPI";
@@ -185,6 +186,25 @@ function Orders() {
                                         ))}
                                     </div>
                                 </div>
+
+                                {/* SHIPPING / DELIVERY ADDRESS INFO */}
+                                {order.shippingAddress && (
+                                    <div className="bg-slate-50 border-t border-slate-200 px-6 py-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs text-slate-600">
+                                        <div className="flex items-start sm:items-center gap-2">
+                                            <span className="inline-flex items-center gap-1 font-bold text-slate-900 shrink-0">
+                                                <MapPin className="w-3.5 h-3.5 text-purple-600" />
+                                                Delivery to:
+                                            </span>
+                                            <span>
+                                                <strong className="text-slate-800">{order.shippingAddress.fullName}</strong>
+                                                {order.shippingAddress.phone && ` (📞 +91 ${order.shippingAddress.phone})`} • {order.shippingAddress.street}, {order.shippingAddress.city}, {order.shippingAddress.state} - {order.shippingAddress.pincode}
+                                            </span>
+                                        </div>
+                                        <div className="text-[11px] font-semibold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-md border border-emerald-200 shrink-0 self-start sm:self-auto">
+                                            Standard Delivery
+                                        </div>
+                                    </div>
+                                )}
                             </div>
                         ))}
                     </div>

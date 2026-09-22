@@ -6,15 +6,14 @@ import { createOrderFromCart } from "../services/order.service.js";
 
 
 export const createorder=asynchandler( async(req,res)=>{
-    const order=await createOrderFromCart(req.user._id);
+    const { shippingAddress } = req.body;
+    const order=await createOrderFromCart(req.user._id, shippingAddress);
 
     res.status(200).json({
         success:true,
         message:"order created successfully",
         order,
     })
-    
-    
 });
 
 export const getmyorder = asynchandler(async (req, res) => {

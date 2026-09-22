@@ -43,10 +43,14 @@ export const createPaymentOrder= asynchandler(async(req,res)=>{
 });
 
 export const verifyPayment=asynchandler(async(req,res)=>{
-    const {razorpay_order_id,razorpay_payment_id,razorpay_signature} = req.body;
+    const {razorpay_order_id,razorpay_payment_id,razorpay_signature, shippingAddress} = req.body;
 
     if(!razorpay_order_id || !razorpay_payment_id || !razorpay_signature){
         throw new ApiError("All payment field is required",403);
+    }
+
+    if(!shippingAddress){
+        throw new ApiError("Shipping address is required to complete order", 400);
     }
 
     const body= `${razorpay_order_id}|${razorpay_payment_id}`;
@@ -77,7 +81,7 @@ export const verifyPayment=asynchandler(async(req,res)=>{
     payment.razorpayPaymentId = razorpay_payment_id;
     payment.razorpaySignature = razorpay_signature;
 
-    const order = await createOrderFromCart(req.user._id);
+    const order = await createOrderFromCart(req.user._id, shippingAddress);
     payment.order=order._id;
 
     await payment.save();

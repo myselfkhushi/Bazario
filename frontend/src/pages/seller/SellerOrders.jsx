@@ -200,7 +200,16 @@ function SellerOrders() {
                                     <div>
                                         <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-3">Shipping Details</h4>
                                         <div className="bg-slate-50 rounded-2xl p-4 border border-slate-100">
-                                            {order.shippinginfo ? (
+                                            {order.shippingAddress ? (
+                                                <div className="text-xs font-medium text-slate-600 space-y-1">
+                                                    <p className="font-bold text-slate-900">{order.shippingAddress.fullName}</p>
+                                                    <p className="text-slate-700">{order.shippingAddress.street}</p>
+                                                    <p>{order.shippingAddress.city}, {order.shippingAddress.state} - {order.shippingAddress.pincode}</p>
+                                                    <p className="pt-2 mt-2 border-t border-slate-200">
+                                                        <span className="font-bold text-slate-900">Phone:</span> +91 {order.shippingAddress.phone}
+                                                    </p>
+                                                </div>
+                                            ) : order.shippinginfo ? (
                                                 <div className="text-xs font-medium text-slate-600 space-y-1">
                                                     <p className="font-bold text-slate-900">{order.shippinginfo.address}</p>
                                                     <p>{order.shippinginfo.city}, {order.shippinginfo.state}</p>
