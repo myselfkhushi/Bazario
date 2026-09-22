@@ -251,14 +251,14 @@ function Checkout() {
             <div className="min-h-screen bg-slate-50 flex items-center justify-center px-4">
                 <div className="max-w-md w-full bg-white p-10 rounded-3xl shadow-sm border border-slate-100 text-center">
                     <div className="w-20 h-20 mx-auto bg-purple-50 rounded-full flex items-center justify-center text-purple-600 mb-6">
-                        <FaShoppingBag size={32} />
+                        <ShoppingBag className="w-8 h-8" />
                     </div>
                     <h1 className="text-2xl font-black text-slate-900 mb-2">Cart is empty</h1>
                     <p className="text-sm font-medium text-slate-500 mb-8">
                         You have no items in your cart to checkout.
                     </p>
                     <Link
-                        to="/"
+                        to="/shop"
                         className="inline-flex items-center gap-2 bg-purple-600 hover:bg-purple-700 text-white rounded-xl shadow-md shadow-purple-200 px-8 py-3.5 font-bold text-sm transition-all uppercase tracking-widest"
                     >
                         Return to Shop
@@ -278,11 +278,11 @@ function Checkout() {
                             to="/cart"
                             className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-slate-500 hover:text-purple-600 transition-colors"
                         >
-                            <FaArrowLeft size={10} />
+                            <ArrowLeft className="w-3.5 h-3.5" />
                             Back to Cart
                         </Link>
                         <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-emerald-600">
-                            <FaLock size={10} />
+                            <Lock className="w-3.5 h-3.5" />
                             Secure Checkout
                         </div>
                     </div>
