@@ -15,13 +15,13 @@ import helmet from "helmet";
 import mongoSanitize from "@exortek/express-mongo-sanitize";
 const app=express();
 
-// app.use(express.json());
-// app.use(helmet());
-// app.use(mongoSanitize());
+app.set("trust proxy", 1);
+
 const allowedOrigins = [
     process.env.FRONTEND_URL,
     "https://bazario-coral.vercel.app",
     "http://localhost:5173",
+    "http://localhost:5174",
     "http://localhost:3000",
 ].filter(Boolean);
 
@@ -29,7 +29,12 @@ app.use(cors({
     origin: function (origin, callback) {
         if (!origin) return callback(null, true);
         const cleanOrigin = origin.replace(/\/$/, "");
-        const isAllowed = allowedOrigins.some(o => o.replace(/\/$/, "") === cleanOrigin) || cleanOrigin.endsWith(".vercel.app");
+        const isAllowed = 
+            allowedOrigins.some(o => o.replace(/\/$/, "") === cleanOrigin) || 
+            cleanOrigin.endsWith(".vercel.app") ||
+            cleanOrigin.includes("localhost") ||
+            cleanOrigin.includes("127.0.0.1");
+
         if (isAllowed) {
             return callback(null, true);
         }
@@ -40,10 +45,10 @@ app.use(cors({
     allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With", "Accept"],
 }));
 
-app.use(cors(allowedOrigins));
-
 app.use(express.json());
-app.use(helmet());
+app.use(helmet({
+    crossOriginResourcePolicy: { policy: "cross-origin" },
+}));
 app.use(mongoSanitize());
 app.use(cookieParser());
 app.use(morgan("dev"));
