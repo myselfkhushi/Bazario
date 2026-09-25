@@ -3,8 +3,17 @@ import {loginUser,getProfile,updateProfile,adminDashboared,registerUser,logoutUs
 import { isAuthenticate,authorizeRole } from "../middleware/auth.middleware.js";
 import { validateregister } from "../validators/user.validator.js";
 import { validatelogin } from "../validators/login.validator.js";
-import authLimiter from "../utils/authlimiter.js"
+// import authLimiter from "../utils/authlimiter.js"
+import rateLimit from "express-rate-limit";
 
+const authLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, 
+    max: 5,                    
+    message: {
+        success: false,
+        message: "Too many attempts, please try again after 15 minutes",
+    },
+});
 
 
 const router = express.Router();
