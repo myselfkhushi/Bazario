@@ -12,10 +12,15 @@ import SellerRoutes from "./routes/seller.routes.js";
 import paymentRoutes from "./routes/payment.routes.js"
 import reviewRoutes from "./routes/review.routes.js"
 import wishlistRoutes from "./routes/wishlist.routes.js";
+import morgan from "morgan";
+import helmet from "helmet";
+import mongoSanitize from "express-mongo-sanitize";
 // // dotenv.config();
 const app=express();
 
 app.use(express.json());
+app.use(helmet());
+app.use(mongoSanitize());
 const allowedOrigins = [
     process.env.FRONTEND_URL,
     "https://bazario-coral.vercel.app",
@@ -31,7 +36,7 @@ app.use(cors({
         if (isAllowed) {
             return callback(null, true);
         }
-        return callback(null, true);
+        return callback(null, false);
     },
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],

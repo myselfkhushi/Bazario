@@ -8,6 +8,9 @@ import { createOrderFromCart } from "../services/order.service.js";
 
 
 export const createPaymentOrder= asynchandler(async(req,res)=>{
+    if (!process.env.RAZORPAY_KEY_ID) {
+        throw new ApiError("Payment gateway not configured", 500);
+    }
     const cartItems= await Cart.find({
         user:req.user._id,
     }).populate("product");
@@ -39,7 +42,7 @@ export const createPaymentOrder= asynchandler(async(req,res)=>{
         success: true,
         razorpayOrder,
         payment,
-        keyId: process.env.RAZORPAY_KEY_ID || "rzp_test_T3u8OApYJFjtRj",
+        keyId: process.env.RAZORPAY_KEY_ID,
     });
 });
 
