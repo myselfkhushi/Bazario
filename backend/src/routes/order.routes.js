@@ -9,6 +9,7 @@ router.get("/getorder",isAuthenticate,getmyorder);
 router.get("/admin/all",isAuthenticate,authorizeRole("admin"),getallorder);
 router.get("/admin/revenue",isAuthenticate,authorizeRole("admin"),gettotalrevenue);
 router.put("/admin/:id",isAuthenticate,authorizeRole("admin"),updateorderstatus);
+
 router.get("/:id",isAuthenticate,getsingleorder);
 
 export default router;
