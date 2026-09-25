@@ -3,8 +3,9 @@ import {loginUser,getProfile,updateProfile,adminDashboared,registerUser,logoutUs
 import { isAuthenticate,authorizeRole } from "../middleware/auth.middleware.js";
 import { validateregister } from "../validators/user.validator.js";
 import { validatelogin } from "../validators/login.validator.js";
-// import authLimiter from "../utils/authlimiter.js"
 import rateLimit from "express-rate-limit";
+
+const router = express.Router();
 
 const authLimiter = rateLimit({
     windowMs: 15 * 60 * 1000, 
@@ -15,15 +16,11 @@ const authLimiter = rateLimit({
     },
 });
 
-
-const router = express.Router();
-
 router.post("/register",authLimiter,validateregister,registerUser);
 router.post("/login",authLimiter,validatelogin,loginUser);
 router.get("/me",isAuthenticate,getProfile);
 router.put("/me",isAuthenticate,updateProfile);
 router.post("/logout", isAuthenticate, logoutUser);
 router.get("/admin",isAuthenticate,authorizeRole("admin"),adminDashboared);
-
 
 export default router;

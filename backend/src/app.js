@@ -12,12 +12,12 @@ import reviewRoutes from "./routes/review.routes.js"
 import wishlistRoutes from "./routes/wishlist.routes.js";
 import morgan from "morgan";
 import helmet from "helmet";
-import mongoSanitize from "express-mongo-sanitize";
+import mongoSanitize from "@exortek/express-mongo-sanitize";
 const app=express();
 
-app.use(express.json());
-app.use(helmet());
-app.use(mongoSanitize());
+// app.use(express.json());
+// app.use(helmet());
+// app.use(mongoSanitize());
 const allowedOrigins = [
     process.env.FRONTEND_URL,
     "https://bazario-coral.vercel.app",
@@ -39,9 +39,14 @@ app.use(cors({
     methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With", "Accept"],
 }));
+
+app.use(cors(corsOptions));
+
+app.use(express.json());
+app.use(helmet());
+app.use(mongoSanitize());
 app.use(cookieParser());
 app.use(morgan("dev"));
-
 app.get("/",(req,res)=>{
     res.send("hello world")
 });

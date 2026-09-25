@@ -51,8 +51,7 @@ export const registerUser =asynchandler( async (req,res) =>{
     }
 
     const user= await User.findOne({email}).select("+password");
-       
-    console.log(user);
+   
 
     if(!user){
        throw new ApiError("Invalid email or password",400);
