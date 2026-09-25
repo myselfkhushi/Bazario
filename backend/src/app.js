@@ -13,7 +13,6 @@ import wishlistRoutes from "./routes/wishlist.routes.js";
 import morgan from "morgan";
 import helmet from "helmet";
 import mongoSanitize from "express-mongo-sanitize";
-// // dotenv.config();
 const app=express();
 
 app.use(express.json());
