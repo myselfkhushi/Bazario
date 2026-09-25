@@ -1,8 +1,6 @@
 import express from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
-import morgan from "morgan";
-// import dotenv from "dotenv";
 import authRoutes from "./routes/auth.routes.js"
 import productRoutes from "./routes/product.routes.js";
 import cartRoutes from "./routes/cart.routes.js"
