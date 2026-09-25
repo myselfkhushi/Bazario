@@ -40,7 +40,7 @@ app.use(cors({
     allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With", "Accept"],
 }));
 
-app.use(cors(corsOptions));
+app.use(cors(allowedOrigins));
 
 app.use(express.json());
 app.use(helmet());
