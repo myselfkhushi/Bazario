@@ -20,7 +20,7 @@ import {
 
 export default function ProductForm({ onSubmit, defaultValues = {}, isSubmitting = false }) {
   const [previews, setPreviews] = useState([]);
-
+const [selectedFiles, setSelectedFiles] = useState([]);
   const {
     register,
     handleSubmit,
@@ -51,17 +51,22 @@ export default function ProductForm({ onSubmit, defaultValues = {}, isSubmitting
     }
   }, [defaultValues]);
 
-  const handleFileChange = (e) => {
+   const handleFileChange = (e) => {
     const files = Array.from(e.target.files);
     if (files.length > 0) {
+      setSelectedFiles(files);
+      setValue("images", files); 
       const urls = files.map((file) => URL.createObjectURL(file));
       setPreviews(urls);
     }
   };
 
   const handleFormSubmit = (data) => {
-    // Pass processed data to parent onSubmit
-    onSubmit(data);
+    // 🟢 3. Make sure images parent onSubmit tak pahunchein
+    onSubmit({
+      ...data,
+      images: selectedFiles.length > 0 ? selectedFiles : data.images,
+    });
   };
 
   return (
@@ -336,13 +341,12 @@ export default function ProductForm({ onSubmit, defaultValues = {}, isSubmitting
             </span>
             <span className="text-xs text-slate-400 mt-1">PNG, JPG, WEBP formats supported (up to 5 images)</span>
             <input
-              type="file"
-              multiple
-              accept="image/*"
-              className="hidden"
-              {...register("images")}
-              onChange={handleFileChange}
-            />
+  type="file"
+  multiple
+  accept="image/*"
+  className="hidden"
+  onChange={handleFileChange}
+/>
           </label>
 
           {/* Previews */}
