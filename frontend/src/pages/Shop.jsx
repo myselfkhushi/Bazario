@@ -54,8 +54,12 @@ function Shop() {
     const [sort, setSort] = useState(searchParams.get("sort") || "newest");
 
     const [availableBrands, setAvailableBrands] = useState(DEFAULT_BRANDS);
-    const [products, setProducts] = useState([]);
+        const [products, setProducts] = useState([]);
     const [loading, setLoading] = useState(true);
+    // 🟢 Nayi Pagination States:
+    const [currentPage, setCurrentPage] = useState(1);
+    const [totalPages, setTotalPages] = useState(1);
+    const [totalProducts, setTotalProducts] = useState(0);
     const [showMobileFilters, setShowMobileFilters] = useState(false);
 
     // Fetch dynamic catalog brands on mount
@@ -163,11 +167,17 @@ function Shop() {
                     brand: searchParams.get("brand") || "All",
                     minPrice: searchParams.get("minPrice") || "",
                     maxPrice: searchParams.get("maxPrice") || "",
-                    sort: searchParams.get("sort") || "newest"
+                    sort: searchParams.get("sort") || "newest",
+                    page: searchParams.get("page") || "1",
                 };
                 
                 const response = await getAllProducts(filters);
                 setProducts(response.product || []);
+                 setTotalPages(response.totalPages || 1);
+                setCurrentPage(response.currentPage || 1);
+                setTotalProducts(response.totalProducts || response.count || 0);
+
+                
             } catch (error) {
                 console.error("Failed to fetch products:", error);
             } finally {
@@ -177,6 +187,14 @@ function Shop() {
 
         fetchFilteredProducts();
     }, [searchParams]);
+
+    const handlePageChange = (newPage) => {
+                    if (newPage < 1 || newPage > totalPages) return;
+                    const params = new URLSearchParams(searchParams);
+                    params.set("page", newPage);
+                    setSearchParams(params);
+                    window.scrollTo({ top: 0, behavior: "smooth" });
+                };
 
     const clearFilters = () => {
         setSearch("");
@@ -422,9 +440,9 @@ function Shop() {
                                     Reset All
                                 </button>
                             </div>
-                        )}
 
-                        {/* Product Grid */}
+                                )}
+                                {/* Product Grid */}
                         {loading ? (
                             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 xl:gap-8">
                                 {Array.from({ length: 6 }).map((_, i) => (
@@ -452,6 +470,47 @@ function Shop() {
                                 >
                                     Clear all filters
                                 </button>
+                            </div>
+                        )}
+                        {/* 🟢 Modern Pagination Bar (Products ke neeche) */}
+                        {totalPages > 1 && (
+                            <div className="mt-12 pt-8 border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-4">
+                                <p className="text-xs font-semibold text-slate-500">
+                                    Showing Page <span className="font-bold text-slate-900">{currentPage}</span> of{" "}
+                                    <span className="font-bold text-slate-900">{totalPages}</span> ({totalProducts} items)
+                                </p>
+                                <div className="flex items-center gap-2">
+                                    {/* Prev Button */}
+                                    <button
+                                        onClick={() => handlePageChange(currentPage - 1)}
+                                        disabled={currentPage === 1}
+                                        className="px-4 py-2 text-xs font-bold rounded-xl border border-slate-200 bg-white text-slate-700 hover:border-purple-400 hover:text-purple-600 disabled:opacity-40 disabled:pointer-events-none transition"
+                                    >
+                                        Prev
+                                    </button>
+                                    {/* Page Numbers */}
+                                    {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
+                                        <button
+                                            key={p}
+                                            onClick={() => handlePageChange(p)}
+                                            className={`w-9 h-9 rounded-xl text-xs font-bold transition ${
+                                                currentPage === p
+                                                    ? "bg-purple-600 text-white shadow-md shadow-purple-200"
+                                                    : "bg-white border border-slate-200 text-slate-700 hover:border-purple-300 hover:text-purple-600"
+                                            }`}
+                                        >
+                                            {p}
+                                        </button>
+                                    ))}
+                                    {/* Next Button */}
+                                    <button
+                                        onClick={() => handlePageChange(currentPage + 1)}
+                                        disabled={currentPage === totalPages}
+                                        className="px-4 py-2 text-xs font-bold rounded-xl border border-slate-200 bg-white text-slate-700 hover:border-purple-400 hover:text-purple-600 disabled:opacity-40 disabled:pointer-events-none transition"
+                                    >
+                                        Next
+                                    </button>
+                                </div>
                             </div>
                         )}
                     </div>

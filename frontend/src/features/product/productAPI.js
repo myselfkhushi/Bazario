@@ -9,6 +9,8 @@ export const getAllProducts = async (filters = {}) => {
     if (filters.minPrice) params.append("minPrice", filters.minPrice);
     if (filters.maxPrice) params.append("maxPrice", filters.maxPrice);
     if (filters.sort) params.append("sort", filters.sort);
+    if (filters.page) params.append("page", filters.page);
+    if (filters.limit) params.append("limit", filters.limit);
 
     const queryString = params.toString();
     const endpoint = queryString ? `/products?${queryString}` : "/products";

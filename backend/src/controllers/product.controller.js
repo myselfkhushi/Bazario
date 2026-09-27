@@ -167,13 +167,28 @@ export const getallproducts = asynchandler(async (req, res) => {
         }
     }
 
+      
+    const page = Number(req.query.page) || 1;
+    const limit = Number(req.query.limit) || 12; // 1 page par 12 products
+    const skip = (page - 1) * limit;
+
+    // 🟢 2. Total matching products aur total pages count karein:
+    const totalProducts = await Product.countDocuments(query);
+    const totalPages = Math.ceil(totalProducts / limit);
+
+    // 🟢 3. Database se sirf us page ke 12 products fetch karein:
     const products = await Product.find(query)
         .sort(sortObj)
+        .skip(skip)
+        .limit(limit)
         .populate("createdBy", "name email");
 
     res.status(200).json({
         success: true,
         count: products.length,
+        totalProducts,
+        totalPages,
+        currentPage: page,
         product: products,
     });
 });
