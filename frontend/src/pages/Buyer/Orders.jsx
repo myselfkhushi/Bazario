@@ -5,7 +5,7 @@ import {
     FaArrowRight,
     FaReceipt,
 } from "react-icons/fa";
-import { MapPin } from "lucide-react";
+import { MapPin,Package } from "lucide-react";
 import { useDispatch, useSelector } from "react-redux";
 
 import { getMyOrders } from "../../features/order/orderAPI";

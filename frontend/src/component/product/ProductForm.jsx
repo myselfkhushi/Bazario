@@ -341,12 +341,12 @@ const [selectedFiles, setSelectedFiles] = useState([]);
             </span>
             <span className="text-xs text-slate-400 mt-1">PNG, JPG, WEBP formats supported (up to 5 images)</span>
             <input
-  type="file"
-  multiple
-  accept="image/*"
-  className="hidden"
-  onChange={handleFileChange}
-/>
+              type="file"
+              multiple
+              accept="image/*"
+              className="hidden"
+              onChange={handleFileChange}
+            />
           </label>
 
           {/* Previews */}
