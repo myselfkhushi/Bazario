@@ -13,12 +13,11 @@ export const getSellerDashboard=asynchandler(async(req,res,next)=>{
     const products=await Product.find({createdBy:sellerId}).select("_id stock");
     const productIds=products.map((product)=>product._id);
 
-    const totalOrders=await Order.countDocuments({
-        "orderitem.product":{$in:productIds},
+   const totalOrders = await Order.countDocuments({
+        "orderitem.seller": sellerId,
     });
-
-    const orders=await Order.find({
-        "orderitem.product":{$in:productIds},
+    const orders = await Order.find({
+        "orderitem.seller": sellerId,
     });
 
     let totalRevenue=0;
@@ -55,15 +54,14 @@ export const getSellerDashboard=asynchandler(async(req,res,next)=>{
 
 export const getRecentOrders=asynchandler(async(req,res)=>{
     const sellerId = req.user._id;
-    const products=await Product.find({createdBy:sellerId}).select("_id");
+    // const products=await Product.find({createdBy:sellerId}).select("_id");
 
-    const productIds=products.map((p)=>p._id);
+    // const productIds=products.map((p)=>p._id);
 
-    const orders=await Order.find({
-        "orderitem.product":{$in:productIds},
+    const orders = await Order.find({
+        "orderitem.seller": sellerId,
     })
     .populate("user","name email")
-    .populate("orderitem.product", "title images price")
     .sort({createdAt:-1})
     .limit(5);
 
@@ -77,17 +75,10 @@ export const getSellerOrders = asynchandler(async (req, res) => {
 
     const sellerId = req.user._id;
 
-    const products = await Product.find({
-        createdBy: sellerId,
-    }).select("_id");
-
-    const productIds = products.map((p) => p._id);
-
     const orders = await Order.find({
-        "orderitem.product": { $in: productIds },
+        "orderitem.seller": sellerId,
     })
         .populate("user", "name email")
-        .populate("orderitem.product", "title images price")
         .sort({ createdAt: -1 });
 
     res.status(200).json({
