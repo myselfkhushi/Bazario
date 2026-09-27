@@ -8,9 +8,7 @@ import { createOrderFromCart } from "../services/order.service.js";
 
 
 export const createPaymentOrder= asynchandler(async(req,res)=>{
-    if (!process.env.RAZORPAY_KEY_ID) {
-        throw new ApiError("Payment gateway not configured", 500);
-    }
+    const { shippingAddress } = req.body;
     const cartItems= await Cart.find({
         user:req.user._id,
     }).populate("product");
@@ -31,12 +29,13 @@ export const createPaymentOrder= asynchandler(async(req,res)=>{
 
     const razorpayOrder=await razorpay.orders.create(options);
 
-    const payment=await Payment.create({
-        user:req.user._id,
-        razorpayOrderId:razorpayOrder.id,
-        amount:totalAmount,
-        status:"created"
-    })
+     const payment = await Payment.create({
+        user: req.user._id,
+        razorpayOrderId: razorpayOrder.id,
+        amount: totalAmount,
+        status: "created",
+        shippingAddress: shippingAddress || null,
+    });
 
     res.status(200).json({
         success: true,
@@ -97,3 +96,51 @@ export const verifyPayment=asynchandler(async(req,res)=>{
     order,
   });
 })
+
+// 🟢 Production Webhook: Direct from Razorpay Server
+export const razorpayWebhook = asynchandler(async (req, res) => {
+    const webhookSecret = process.env.RAZORPAY_WEBHOOK_SECRET || "bazario_webhook_secret_key_123";
+    const signature = req.headers["x-razorpay-signature"];
+
+    if (!signature) {
+        throw new ApiError("Webhook signature missing", 400);
+    }
+
+    // 1. Signature Verify Karna (Security check ki call sach me Razorpay se aayi hai)
+    const expectedSignature = crypto
+        .createHmac("sha256", webhookSecret)
+        .update(JSON.stringify(req.body))
+        .digest("hex");
+
+    if (expectedSignature !== signature) {
+        throw new ApiError("Invalid webhook signature", 400);
+    }
+
+    const event = req.body.event;
+
+    // 2. Agar payment complete ho gayi hai
+    if (event === "payment.captured" || event === "order.paid") {
+        const paymentEntity = req.body.payload.payment.entity;
+        const razorpayOrderId = paymentEntity.order_id;
+        const razorpayPaymentId = paymentEntity.id;
+
+        const payment = await Payment.findOne({ razorpayOrderId });
+
+        // Idempotency: Agar order pehle nahi bana tha, toh banao!
+        if (payment && payment.status !== "paid") {
+            payment.status = "paid";
+            payment.razorpayPaymentId = razorpayPaymentId;
+            payment.razorpaySignature = signature;
+
+            if (!payment.order && payment.shippingAddress) {
+                const order = await createOrderFromCart(payment.user, payment.shippingAddress);
+                payment.order = order._id;
+            }
+
+            await payment.save();
+        }
+    }
+
+    // Razorpay ko batayein ki alert successfully mil gaya
+    res.status(200).json({ status: "ok" });
+});

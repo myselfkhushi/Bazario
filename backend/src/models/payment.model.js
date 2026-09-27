@@ -33,6 +33,14 @@ const paymentSchema=new mongoose.Schema(
         enum:["created","paid","pending"],
         default:"created"
        },
+        shippingAddress: {
+        fullName: String,
+        phone: String,
+        street: String,
+        city: String,
+        state: String,
+        pincode: String,
+        },
     },
     {
      timestamps:true,

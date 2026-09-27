@@ -171,10 +171,10 @@ function Checkout() {
         try {
             setPaymentLoading(true);
 
-            const response = await createPaymentOrder();
+           const response = await createPaymentOrder({ shippingAddress: address });
 
             const option = {
-                key: response.keyId || import.meta.env.VITE_RAZORPAY_KEY_ID || "rzp_test_T3u8OApYJFjtRj",
+                key: response.keyId || import.meta.env.VITE_RAZORPAY_KEY_ID ,
                 amount: response.razorpayOrder.amount,
                 currency: response.razorpayOrder.currency,
                 order_id: response.razorpayOrder.id,
