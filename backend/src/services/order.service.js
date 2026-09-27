@@ -25,26 +25,30 @@ export const createOrderFromCart = async (userId, shippingAddress) => {
         const orderItem = [];
         let totalAmount = 0;
 
-        for (const item of cartItem) {
+       for (const item of cartItem) {
             const product = item.product;
-
+           
+            if (!product) {
+                continue; 
+            }
             const updatedProduct = await Product.findOneAndUpdate(
                 { _id: product._id, stock: { $gte: item.quantity } },
                 { $inc: { stock: -item.quantity } },
                 { new: true, session }
             );
-
             if (!updatedProduct) {
                 throw new ApiError(`${product.title} is out of stock`, 400);
             }
-
             totalAmount += product.price * item.quantity;
-
+            
             orderItem.push({
                 product: product._id,
                 seller: product.createdBy,
+                title: product.title,
+                image: product.images?.[0]?.url || "",
+                brand: product.brand || "Bazario Official",
                 quantity: item.quantity,
-                price: item.product.price,
+                price: product.price,
             });
         }
 

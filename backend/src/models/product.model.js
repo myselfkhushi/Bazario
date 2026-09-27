@@ -113,5 +113,13 @@ productSchema.methods.updateRating=async function(){
     console.log("rating update");
 }
 
+productSchema.index({ title: "text", brand: "text", description: "text" });
+// 🟢 2. Category aur Price filters ko millisecond me execute karne ke liye
+productSchema.index({ category: 1, price: 1 });
+
+productSchema.index({ brand: 1 });
+
+productSchema.index({ createdAt: -1 });
+
 const Product = mongoose.model("Product",productSchema);
 export default Product;

@@ -139,10 +139,10 @@ function SellerOrders() {
                                         {order.orderitem.map((item, index) => (
                                             <div key={index} className="flex gap-4 p-4 rounded-2xl border border-slate-100 hover:bg-slate-50 transition-colors">
                                                 <div className="w-16 h-16 bg-slate-100 rounded-xl border border-slate-200 overflow-hidden shrink-0">
-                                                    {item.product?.images?.[0] ? (
+                                                    {(item.image || item.product?.images?.[0]?.url) ? (
                                                         <img 
-                                                            src={item.product.images[0].url} 
-                                                            alt={item.product?.title}
+                                                            src={item.image || item.product?.images?.[0]?.url} 
+                                                            alt={item.title || item.product?.title || "Product"}
                                                             className="w-full h-full object-cover"
                                                         />
                                                     ) : (
@@ -153,8 +153,8 @@ function SellerOrders() {
                                                 </div>
                                                 <div className="flex-1 flex flex-col justify-center">
                                                     <h5 className="font-bold text-slate-900 text-sm line-clamp-1 mb-1">
-                                                        {item.product?.title || "Product Unavailable"}
-                                                    </h5>
+                                                        {item.title || item.product?.title || "Product Unavailable"}
+                                                    </h5>       
                                                     <div className="flex items-center gap-4 text-xs font-bold text-slate-500">
                                                         <span>Qty: {item.quantity}</span>
                                                         <span className="w-1 h-1 bg-slate-300 rounded-full"></span>

@@ -146,8 +146,8 @@ function Orders() {
                                                 {/* IMAGE */}
                                                 <div className="w-24 h-24 bg-slate-100 border border-slate-200 shrink-0">
                                                     <img
-                                                        src={item.product?.images?.[0]?.url || "/placeholder-product.png"}
-                                                        alt={item.product?.title || "Product"}
+                                                        src={item.image || item.product?.images?.[0]?.url || "/placeholder-product.png"}
+                                                        alt={item.title || item.product?.title || "Product"}
                                                         className="w-full h-full object-cover mix-blend-multiply"
                                                     />
                                                 </div>
@@ -155,10 +155,10 @@ function Orders() {
                                                 {/* DETAILS */}
                                                 <div className="flex-1 min-w-0">
                                                     <p className="text-[10px] uppercase tracking-widest font-bold text-slate-400 mb-1">
-                                                        {item.product?.brand || item.product?.category || "Product"}
+                                                        {item.brand || item.product?.brand || item.product?.category || "Product"}
                                                     </p>
                                                     <h3 className="text-base font-bold text-slate-900 line-clamp-1">
-                                                        {item.product?.title || "Product unavailable"}
+                                                        {item.title || item.product?.title || "Product unavailable"}
                                                     </h3>
                                                     
                                                     <div className="flex items-center gap-6 mt-4">

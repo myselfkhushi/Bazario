@@ -21,15 +21,26 @@ const orderSchema= new mongoose.Schema({
         ref:"User"
       },
    
-     quantity:{
+     title: {
+        type: String,
+        required: true,
+      },
+      image: {
+        type: String,
+        required: true,
+      },
+      brand: {
+        type: String,
+        default: "Bazario Official",
+      },
+      quantity:{
         type:Number,
         required:true
-     },
-     
-     price:{
+      },
+      price:{
         type:Number,
         required:true
-     }
+      }
    },
 ],
    shippingAddress: {
@@ -55,6 +66,10 @@ const orderSchema= new mongoose.Schema({
 {
     timestamps:true
 });
+
+orderSchema.index({ user: 1, createdAt: -1 });
+orderSchema.index({ "orderitem.seller": 1, createdAt: -1 });
+orderSchema.index({ orderstatus: 1 });
 
 const Order=mongoose.model("Order",orderSchema);
 export default Order;
