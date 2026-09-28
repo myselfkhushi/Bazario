@@ -1,4 +1,5 @@
 import Order from "../models/order.model.js";
+import mongoose from "mongoose";
 import Cart from "../models/cart.model.js";
 import asynchandler from "../utils/asynchandler.js";
 import ApiError from "../utils/apierror.js";
@@ -114,4 +115,44 @@ export const gettotalrevenue = asynchandler(async (req,res)=>{
             totalrevenue,
         })
     
+});
+
+// 🟢 Live Order Tracking API (Customer Order ID ya AWB Number se track kar sake)
+export const trackOrder = asynchandler(async (req, res) => {
+    const { id } = req.params;
+
+    if (!id) {
+        throw new ApiError("Order ID or Tracking Number is required", 400);
+    }
+
+    // Check karein ki MongoDB ID hai ya Courier Tracking AWB Number
+    let query;
+    if (mongoose.Types.ObjectId.isValid(id)) {
+        query = { _id: id };
+    } else {
+        query = { trackingNumber: id.trim() };
+    }
+
+    const order = await Order.findOne(query)
+        .populate("user", "name email")
+        .select("_id orderstatus courier trackingNumber statusHistory totalamount shippingAddress createdAt orderitem");
+
+    if (!order) {
+        throw new ApiError("No shipment found for this Order ID or Tracking Number", 404);
+    }
+
+    res.status(200).json({
+        success: true,
+        order: {
+            _id: order._id,
+            orderstatus: order.orderstatus,
+            courier: order.courier || "Express Surface Logistics",
+            trackingNumber: order.trackingNumber || `TRK-${order._id.toString().slice(-8).toUpperCase()}`,
+            createdAt: order.createdAt,
+            shippingAddress: order.shippingAddress,
+            totalamount: order.totalamount,
+            statusHistory: order.statusHistory || [],
+            orderitem: order.orderitem,
+        },
+    });
 });

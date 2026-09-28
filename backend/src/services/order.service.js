@@ -64,6 +64,16 @@ export const createOrderFromCart = async (userId, shippingAddress) => {
                 state: shippingAddress.state.trim(),
                 pincode: shippingAddress.pincode.trim(),
             },
+            orderstatus: "pending",
+            statusHistory: [
+                {
+                    status: "pending",
+                    timestamp: new Date(),
+                    message: "Order placed successfully. Awaiting seller confirmation.",
+                    location: `${shippingAddress.city.trim()}, ${shippingAddress.state.trim()}`,
+                }
+            ],
+
         }], { session });
 
         const order = orderArray[0];

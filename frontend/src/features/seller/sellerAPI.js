@@ -20,3 +20,9 @@ export const getSellerOrders = async () => {
     const response = await api.get("/seller/orders");
     return response.data;
 };
+
+// Update Seller Order Status (Confirmed, Processing, Shipped, Cancelled)
+export const updateSellerOrderStatus = async (orderId, data) => {
+    const response = await api.put(`/seller/orders/${orderId}/status`, data);
+    return response.data;
+};

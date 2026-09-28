@@ -1,5 +1,6 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
+import toast from "react-hot-toast";
 import {
     PackageOpen,
     CheckCircle2,
@@ -10,9 +11,14 @@ import {
     Receipt,
     Store,
     Calendar,
+    Send,
+    X,
+    AlertCircle,
+    Check
 } from "lucide-react";
 
 import { getSellerOrders } from "../../features/seller/sellerSlice";
+import { updateSellerOrderStatus } from "../../features/seller/sellerAPI";
 
 function SellerOrders() {
     const dispatch = useDispatch();
@@ -23,37 +29,50 @@ function SellerOrders() {
         error,
     } = useSelector((state) => state.seller);
 
+    const [updatingOrderId, setUpdatingOrderId] = useState(null);
+    const [dispatchModalOrder, setDispatchModalOrder] = useState(null);
+    const [courierName, setCourierName] = useState("BlueDart");
+    const [awbNumber, setAwbNumber] = useState("");
+
     useEffect(() => {
         dispatch(getSellerOrders());
     }, [dispatch]);
 
-    const getStatusStyle = (status) => {
-        switch (status) {
-            case "Delivered":
-                return "bg-emerald-50 text-emerald-700 border-emerald-200";
-            case "Shipped":
-                return "bg-blue-50 text-blue-700 border-blue-200";
-            case "Processing":
-                return "bg-indigo-50 text-indigo-700 border-indigo-200";
-            case "Pending":
-                return "bg-amber-50 text-amber-700 border-amber-200";
-            case "Cancelled":
-                return "bg-rose-50 text-rose-700 border-rose-200";
-            default:
-                return "bg-slate-100 text-slate-700 border-slate-200";
+      const handleQuickStatus = async (orderId, newStatus) => {
+        try {
+            setUpdatingOrderId(orderId);
+            await updateSellerOrderStatus(orderId, { orderstatus: newStatus });
+            toast.success(`Order marked as ${newStatus.toUpperCase()}`);
+            dispatch(getSellerOrders());
+        } catch (err) {
+            toast.error(err.response?.data?.message || "Failed to update status");
+        } finally {
+            setUpdatingOrderId(null);
         }
     };
-
-    const getStatusIcon = (status) => {
-        switch (status) {
-            case "Delivered":
-                return <CheckCircle2 className="w-3.5 h-3.5" />;
-            case "Shipped":
-                return <Truck className="w-3.5 h-3.5" />;
-            case "Processing":
-                return <Clock className="w-3.5 h-3.5" />;
-            default:
-                return <Clock className="w-3.5 h-3.5" />;
+    // Shipped dispatch form submit handler
+    const handleDispatchSubmit = async (e) => {
+        e.preventDefault();
+        if (!dispatchModalOrder) return;
+        if (!awbNumber.trim()) {
+            toast.error("Please enter a valid Tracking / AWB Number");
+            return;
+        }
+        try {
+            setUpdatingOrderId(dispatchModalOrder._id);
+            await updateSellerOrderStatus(dispatchModalOrder._id, {
+                orderstatus: "shipped",
+                courier: courierName,
+                trackingNumber: awbNumber.trim(),
+            });
+            toast.success("Parcel dispatched to courier successfully!");
+            setDispatchModalOrder(null);
+            setAwbNumber("");
+            dispatch(getSellerOrders());
+        } catch (err) {
+            toast.error(err.response?.data?.message || "Failed to dispatch order");
+        } finally {
+            setUpdatingOrderId(null);
         }
     };
 
@@ -169,14 +188,61 @@ function SellerOrders() {
                                 {/* Order Meta (Customer & Status) */}
                                 <div className="lg:w-72 shrink-0 flex flex-col gap-6 lg:border-l lg:border-slate-100 lg:pl-8">
                                     
-                                    {/* Status */}
+                                                                        {/* Status & Actions */}
                                     <div>
                                         <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-3">Order Status</h4>
-                                        <div className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full border ${getStatusStyle(order.orderstatus)}`}>
+                                        <div className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full border mb-3 ${getStatusStyle(order.orderstatus)}`}>
                                             {getStatusIcon(order.orderstatus)}
                                             <span className="text-[10px] font-black uppercase tracking-widest">
                                                 {order.orderstatus}
                                             </span>
+                                        </div>
+
+                                        {/* 🟢 Seller Action Buttons Based on Status */}
+                                        <div className="space-y-2">
+                                            {order.orderstatus === "pending" && (
+                                                <button
+                                                    disabled={updatingOrderId === order._id}
+                                                    onClick={() => handleQuickStatus(order._id, "confirmed")}
+                                                    className="w-full py-2 px-3 bg-purple-600 hover:bg-purple-700 text-white rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 shadow-sm shadow-purple-200"
+                                                >
+                                                    <Check className="w-3.5 h-3.5" /> Accept & Confirm
+                                                </button>
+                                            )}
+
+                                            {order.orderstatus === "confirmed" && (
+                                                <button
+                                                    disabled={updatingOrderId === order._id}
+                                                    onClick={() => handleQuickStatus(order._id, "processing")}
+                                                    className="w-full py-2 px-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 shadow-sm shadow-indigo-200"
+                                                >
+                                                    <Clock className="w-3.5 h-3.5" /> Start Packing
+                                                </button>
+                                            )}
+
+                                            {order.orderstatus === "processing" && (
+                                                <button
+                                                    disabled={updatingOrderId === order._id}
+                                                    onClick={() => setDispatchModalOrder(order)}
+                                                    className="w-full py-2 px-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 shadow-sm shadow-blue-200"
+                                                >
+                                                    <Truck className="w-3.5 h-3.5" /> Dispatch / Ship Parcel
+                                                </button>
+                                            )}
+
+                                            {order.orderstatus === "shipped" && (
+                                                <div className="p-2.5 bg-blue-50 border border-blue-200 rounded-xl text-[11px] text-blue-900 font-semibold space-y-0.5">
+                                                    <p>Courier: <strong>{order.courier || "Express"}</strong></p>
+                                                    <p>AWB: <strong>{order.trackingNumber || "N/A"}</strong></p>
+                                                    <p className="text-[10px] text-blue-600 font-medium pt-1">Handed over to courier. In transit.</p>
+                                                </div>
+                                            )}
+
+                                            {order.orderstatus === "delivered" && (
+                                                <p className="text-[11px] font-bold text-emerald-700 bg-emerald-50 px-3 py-1.5 rounded-lg border border-emerald-200 text-center">
+                                                    Delivered to Customer
+                                                </p>
+                                            )}
                                         </div>
                                     </div>
 
@@ -228,6 +294,77 @@ function SellerOrders() {
                             </div>
                         </div>
                     ))}
+                </div>
+            )}
+
+                        {/* 🟢 Dispatch Courier Modal */}
+            {dispatchModalOrder && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-xs p-4">
+                    <div className="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-100 animate-in fade-in zoom-in-95 duration-200">
+                        <div className="flex items-center justify-between pb-4 border-b border-slate-100">
+                            <div>
+                                <h3 className="text-lg font-black text-slate-900">Dispatch Shipment</h3>
+                                <p className="text-xs text-slate-500 font-medium">Order #{dispatchModalOrder._id.slice(-6).toUpperCase()}</p>
+                            </div>
+                            <button
+                                onClick={() => setDispatchModalOrder(null)}
+                                className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-600 transition"
+                            >
+                                <X className="w-4 h-4" />
+                            </button>
+                        </div>
+
+                        <form onSubmit={handleDispatchSubmit} className="mt-5 space-y-4">
+                            <div>
+                                <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">
+                                    Courier Partner
+                                </label>
+                                <select
+                                    value={courierName}
+                                    onChange={(e) => setCourierName(e.target.value)}
+                                    className="w-full py-2.5 px-3 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-purple-400"
+                                >
+                                    <option value="BlueDart Express">BlueDart Express</option>
+                                    <option value="Delhivery Surface">Delhivery Surface</option>
+                                    <option value="DTDC Express">DTDC Express</option>
+                                    <option value="Ekart Logistics">Ekart Logistics</option>
+                                    <option value="Shadowfax">Shadowfax</option>
+                                    <option value="India Post Speed Post">India Post Speed Post</option>
+                                </select>
+                            </div>
+
+                            <div>
+                                <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">
+                                    AWB / Tracking Number
+                                </label>
+                                <input
+                                    type="text"
+                                    placeholder="e.g. BD-904128472 or DLV-441892"
+                                    value={awbNumber}
+                                    onChange={(e) => setAwbNumber(e.target.value)}
+                                    className="w-full py-2.5 px-3 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-purple-400"
+                                    required
+                                />
+                            </div>
+
+                            <div className="pt-2 flex gap-3">
+                                <button
+                                    type="button"
+                                    onClick={() => setDispatchModalOrder(null)}
+                                    className="flex-1 py-2.5 rounded-xl border border-slate-200 text-xs font-bold text-slate-600 hover:bg-slate-50"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    type="submit"
+                                    disabled={updatingOrderId === dispatchModalOrder._id}
+                                    className="flex-1 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold shadow-md shadow-purple-200 flex items-center justify-center gap-1.5"
+                                >
+                                    <Send className="w-3.5 h-3.5" /> Confirm Dispatch
+                                </button>
+                            </div>
+                        </form>
+                    </div>
                 </div>
             )}
         </div>

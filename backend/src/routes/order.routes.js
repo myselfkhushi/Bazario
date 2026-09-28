@@ -1,9 +1,9 @@
-import { createorder,getmyorder,getsingleorder,getallorder ,updateorderstatus,gettotalrevenue} from "../controllers/order.controller.js";
+import { createorder,getmyorder,getsingleorder,getallorder ,updateorderstatus,gettotalrevenue,trackOrder} from "../controllers/order.controller.js";
 import express from "express";
 import {authorizeRole, isAuthenticate} from "../middleware/auth.middleware.js"
 
 const router = express.Router();
-
+router.get("/track/:id", trackOrder);
 router.post("/createorder",isAuthenticate,createorder);
 router.get("/getorder",isAuthenticate,getmyorder);
 router.get("/admin/all",isAuthenticate,authorizeRole("admin"),getallorder);
