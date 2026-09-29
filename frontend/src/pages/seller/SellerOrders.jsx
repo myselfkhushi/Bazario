@@ -14,11 +14,13 @@ import {
     Send,
     X,
     AlertCircle,
-    Check
+    Check,
+    Printer
 } from "lucide-react";
 
 import { getSellerOrders } from "../../features/seller/sellerSlice";
 import { updateSellerOrderStatus } from "../../features/seller/sellerAPI";
+import ShippingLabelModal from "../../component/seller/ShippingLabelModal.jsx";
 
 function SellerOrders() {
     const dispatch = useDispatch();
@@ -31,18 +33,19 @@ function SellerOrders() {
 
     const [updatingOrderId, setUpdatingOrderId] = useState(null);
     const [dispatchModalOrder, setDispatchModalOrder] = useState(null);
-    const [courierName, setCourierName] = useState("BlueDart");
+    const [selectedLabelOrder, setSelectedLabelOrder] = useState(null);
+    const [courierName, setCourierName] = useState("BlueDart Express");
     const [awbNumber, setAwbNumber] = useState("");
 
     useEffect(() => {
         dispatch(getSellerOrders());
     }, [dispatch]);
 
-      const handleQuickStatus = async (orderId, newStatus) => {
+    const handleQuickStatus = async (orderId, newStatus) => {
         try {
             setUpdatingOrderId(orderId);
             await updateSellerOrderStatus(orderId, { orderstatus: newStatus });
-            toast.success(`Order marked as ${newStatus.toUpperCase()}`);
+            toast.success(`Order status updated to ${newStatus.toUpperCase()}`);
             dispatch(getSellerOrders());
         } catch (err) {
             toast.error(err.response?.data?.message || "Failed to update status");
@@ -50,7 +53,7 @@ function SellerOrders() {
             setUpdatingOrderId(null);
         }
     };
-    // Shipped dispatch form submit handler
+
     const handleDispatchSubmit = async (e) => {
         e.preventDefault();
         if (!dispatchModalOrder) return;
@@ -58,6 +61,7 @@ function SellerOrders() {
             toast.error("Please enter a valid Tracking / AWB Number");
             return;
         }
+
         try {
             setUpdatingOrderId(dispatchModalOrder._id);
             await updateSellerOrderStatus(dispatchModalOrder._id, {
@@ -76,6 +80,40 @@ function SellerOrders() {
         }
     };
 
+    const getStatusStyle = (status) => {
+        switch (status?.toLowerCase()) {
+            case "delivered":
+                return "bg-emerald-50 text-emerald-700 border-emerald-200";
+            case "shipped":
+                return "bg-blue-50 text-blue-700 border-blue-200";
+            case "rtd":
+                return "bg-amber-50 text-amber-700 border-amber-200";
+            case "processing":
+                return "bg-indigo-50 text-indigo-700 border-indigo-200";
+            case "confirmed":
+                return "bg-purple-50 text-purple-700 border-purple-200";
+            case "cancelled":
+                return "bg-rose-50 text-rose-700 border-rose-200";
+            default:
+                return "bg-slate-100 text-slate-700 border-slate-200";
+        }
+    };
+
+    const getStatusIcon = (status) => {
+        switch (status?.toLowerCase()) {
+            case "delivered":
+                return <CheckCircle2 className="w-3.5 h-3.5" />;
+            case "shipped":
+                return <Truck className="w-3.5 h-3.5" />;
+            case "rtd":
+            case "processing":
+            case "confirmed":
+                return <Clock className="w-3.5 h-3.5" />;
+            default:
+                return <Clock className="w-3.5 h-3.5" />;
+        }
+    };
+
     return (
         <div className="font-sans text-slate-900">
             {/* HEADER */}
@@ -85,7 +123,7 @@ function SellerOrders() {
                         Orders Management
                     </h1>
                     <p className="text-slate-500 text-sm mt-2 font-medium">
-                        View and track all customer orders.
+                        View, pack, print shipping labels, and handover orders to couriers.
                     </p>
                 </div>
                 <div className="bg-white border border-slate-200 rounded-xl px-4 py-2 flex items-center gap-3">
@@ -133,51 +171,49 @@ function SellerOrders() {
                                 <div className="flex items-center gap-6 text-sm">
                                     <div className="hidden sm:block">
                                         <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">Placed On</p>
-                                        <div className="flex items-center gap-1.5 font-bold text-slate-700">
-                                            <Calendar className="w-4 h-4 text-slate-400" />
-                                            {new Date(order.createdAt).toLocaleDateString('en-IN', {
-                                                year: 'numeric',
-                                                month: 'short',
-                                                day: 'numeric'
+                                        <p className="font-bold text-slate-700 text-xs">
+                                            {new Date(order.createdAt).toLocaleDateString("en-IN", {
+                                                year: "numeric",
+                                                month: "short",
+                                                day: "numeric",
                                             })}
-                                        </div>
+                                        </p>
                                     </div>
-                                    <div>
-                                        <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1 text-right">Total Amount</p>
-                                        <p className="font-black text-slate-900 text-right text-lg">₹{order.totalamount.toLocaleString("en-IN")}</p>
+                                    <div className="text-right">
+                                        <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">Total</p>
+                                        <p className="font-black text-slate-900 text-base">₹{Number(order.totalamount).toLocaleString("en-IN")}</p>
                                     </div>
                                 </div>
                             </div>
 
-                            <div className="p-6 sm:p-8 flex flex-col lg:flex-row gap-8 lg:gap-12">
+                            {/* Order Body */}
+                            <div className="p-6 sm:p-8 flex flex-col lg:flex-row gap-8">
                                 
                                 {/* Items List */}
                                 <div className="flex-1">
-                                    <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-4">Items Ordered</h4>
+                                    <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-4">Purchased Items</h4>
                                     <div className="space-y-4">
-                                        {order.orderitem.map((item, index) => (
-                                            <div key={index} className="flex gap-4 p-4 rounded-2xl border border-slate-100 hover:bg-slate-50 transition-colors">
-                                                <div className="w-16 h-16 bg-slate-100 rounded-xl border border-slate-200 overflow-hidden shrink-0">
-                                                    {(item.image || item.product?.images?.[0]?.url) ? (
-                                                        <img 
-                                                            src={item.image || item.product?.images?.[0]?.url} 
-                                                            alt={item.title || item.product?.title || "Product"}
+                                        {order.orderitem?.map((item, index) => (
+                                            <div key={index} className="flex gap-4 p-4 rounded-2xl bg-slate-50 border border-slate-100">
+                                                <div className="w-16 h-16 rounded-xl bg-white border border-slate-200 overflow-hidden shrink-0 flex items-center justify-center">
+                                                    {item.image || item.product?.images?.[0]?.url ? (
+                                                        <img
+                                                            src={item.image || item.product?.images?.[0]?.url}
+                                                            alt={item.title || "Product"}
                                                             className="w-full h-full object-cover"
                                                         />
                                                     ) : (
-                                                        <div className="w-full h-full flex items-center justify-center">
-                                                            <PackageOpen className="w-6 h-6 text-slate-400" />
-                                                        </div>
+                                                        <PackageOpen className="w-6 h-6 text-slate-400" />
                                                     )}
                                                 </div>
                                                 <div className="flex-1 flex flex-col justify-center">
                                                     <h5 className="font-bold text-slate-900 text-sm line-clamp-1 mb-1">
-                                                        {item.title || item.product?.title || "Product Unavailable"}
+                                                        {item.title || item.product?.title || "Product"}
                                                     </h5>       
                                                     <div className="flex items-center gap-4 text-xs font-bold text-slate-500">
                                                         <span>Qty: {item.quantity}</span>
                                                         <span className="w-1 h-1 bg-slate-300 rounded-full"></span>
-                                                        <span className="text-slate-900">₹{item.price.toLocaleString("en-IN")}</span>
+                                                        <span className="text-slate-900">₹{Number(item.price).toLocaleString("en-IN")}</span>
                                                     </div>
                                                 </div>
                                             </div>
@@ -185,10 +221,10 @@ function SellerOrders() {
                                     </div>
                                 </div>
 
-                                {/* Order Meta (Customer & Status) */}
+                                {/* Order Meta (Customer & Actions) */}
                                 <div className="lg:w-72 shrink-0 flex flex-col gap-6 lg:border-l lg:border-slate-100 lg:pl-8">
                                     
-                                                                        {/* Status & Actions */}
+                                    {/* Status & Actions */}
                                     <div>
                                         <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-3">Order Status</h4>
                                         <div className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full border mb-3 ${getStatusStyle(order.orderstatus)}`}>
@@ -198,10 +234,8 @@ function SellerOrders() {
                                             </span>
                                         </div>
 
-                                                                                {/* 🟢 Flipkart Style Seller Action Pipeline */}
+                                        {/* 🟢 Flipkart Style Action Pipeline */}
                                         <div className="space-y-2">
-                                            
-                                            {/* Step 1: New Order -> Generate Label */}
                                             {order.orderstatus === "pending" && (
                                                 <button
                                                     disabled={updatingOrderId === order._id}
@@ -215,7 +249,6 @@ function SellerOrders() {
                                                 </button>
                                             )}
 
-                                            {/* Step 2: Pending RTD -> Pack & Mark RTD */}
                                             {order.orderstatus === "processing" && (
                                                 <div className="space-y-1.5">
                                                     <button
@@ -234,7 +267,6 @@ function SellerOrders() {
                                                 </div>
                                             )}
 
-                                            {/* Step 3: RTD -> Courier Handover / Pickup */}
                                             {order.orderstatus === "rtd" && (
                                                 <div className="space-y-1.5">
                                                     <div className="p-2 bg-amber-50 border border-amber-200 rounded-xl text-[10px] text-amber-900 font-semibold text-center">
@@ -250,7 +282,6 @@ function SellerOrders() {
                                                 </div>
                                             )}
 
-                                            {/* Step 4: Shipped & In Transit */}
                                             {order.orderstatus === "shipped" && (
                                                 <div className="p-2.5 bg-blue-50 border border-blue-200 rounded-xl text-[11px] text-blue-900 font-semibold space-y-0.5">
                                                     <p>Courier: <strong>{order.courier || "E-Kart Logistics"}</strong></p>
@@ -259,13 +290,13 @@ function SellerOrders() {
                                                 </div>
                                             )}
 
-                                            {/* Step 5: Delivered */}
                                             {order.orderstatus === "delivered" && (
                                                 <p className="text-[11px] font-bold text-emerald-700 bg-emerald-50 px-3 py-1.5 rounded-lg border border-emerald-200 text-center">
                                                     Delivered to Customer
                                                 </p>
                                             )}
                                         </div>
+                                    </div>
 
                                     {/* Customer Info */}
                                     <div>
@@ -276,7 +307,7 @@ function SellerOrders() {
                                                     <User className="w-4 h-4 text-slate-500" />
                                                 </div>
                                                 <div>
-                                                    <p className="text-xs font-bold text-slate-900">{order.user?.name || "Guest User"}</p>
+                                                    <p className="text-xs font-bold text-slate-900">{order.user?.name || "Customer"}</p>
                                                     <p className="text-[10px] font-bold text-slate-500">{order.user?.email || "No email"}</p>
                                                 </div>
                                             </div>
@@ -296,15 +327,6 @@ function SellerOrders() {
                                                         <span className="font-bold text-slate-900">Phone:</span> +91 {order.shippingAddress.phone}
                                                     </p>
                                                 </div>
-                                            ) : order.shippinginfo ? (
-                                                <div className="text-xs font-medium text-slate-600 space-y-1">
-                                                    <p className="font-bold text-slate-900">{order.shippinginfo.address}</p>
-                                                    <p>{order.shippinginfo.city}, {order.shippinginfo.state}</p>
-                                                    <p>{order.shippinginfo.country} - {order.shippinginfo.pincode}</p>
-                                                    <p className="pt-2 mt-2 border-t border-slate-200">
-                                                        <span className="font-bold text-slate-900">Phone:</span> {order.shippinginfo.phoneno}
-                                                    </p>
-                                                </div>
                                             ) : (
                                                 <p className="text-xs text-slate-500 italic">No shipping details provided.</p>
                                             )}
@@ -318,13 +340,13 @@ function SellerOrders() {
                 </div>
             )}
 
-                        {/* 🟢 Dispatch Courier Modal */}
+            {/* 🟢 Dispatch Courier Modal */}
             {dispatchModalOrder && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-xs p-4">
                     <div className="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-100 animate-in fade-in zoom-in-95 duration-200">
                         <div className="flex items-center justify-between pb-4 border-b border-slate-100">
                             <div>
-                                <h3 className="text-lg font-black text-slate-900">Dispatch Shipment</h3>
+                                <h3 className="text-lg font-black text-slate-900">Handover to Courier</h3>
                                 <p className="text-xs text-slate-500 font-medium">Order #{dispatchModalOrder._id.slice(-6).toUpperCase()}</p>
                             </div>
                             <button
@@ -345,12 +367,11 @@ function SellerOrders() {
                                     onChange={(e) => setCourierName(e.target.value)}
                                     className="w-full py-2.5 px-3 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-purple-400"
                                 >
+                                    <option value="E-Kart Logistics">E-Kart Logistics</option>
                                     <option value="BlueDart Express">BlueDart Express</option>
                                     <option value="Delhivery Surface">Delhivery Surface</option>
                                     <option value="DTDC Express">DTDC Express</option>
-                                    <option value="Ekart Logistics">Ekart Logistics</option>
                                     <option value="Shadowfax">Shadowfax</option>
-                                    <option value="India Post Speed Post">India Post Speed Post</option>
                                 </select>
                             </div>
 
@@ -360,7 +381,7 @@ function SellerOrders() {
                                 </label>
                                 <input
                                     type="text"
-                                    placeholder="e.g. BD-904128472 or DLV-441892"
+                                    placeholder="e.g. FMPC4607537113"
                                     value={awbNumber}
                                     onChange={(e) => setAwbNumber(e.target.value)}
                                     className="w-full py-2.5 px-3 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-purple-400"
@@ -381,12 +402,20 @@ function SellerOrders() {
                                     disabled={updatingOrderId === dispatchModalOrder._id}
                                     className="flex-1 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold shadow-md shadow-purple-200 flex items-center justify-center gap-1.5"
                                 >
-                                    <Send className="w-3.5 h-3.5" /> Confirm Dispatch
+                                    <Send className="w-3.5 h-3.5" /> Confirm Handover
                                 </button>
                             </div>
                         </form>
                     </div>
                 </div>
+            )}
+
+            {/* 🟢 Flipkart Shipping Label Modal */}
+            {selectedLabelOrder && (
+                <ShippingLabelModal
+                    order={selectedLabelOrder}
+                    onClose={() => setSelectedLabelOrder(null)}
+                />
             )}
         </div>
     );

@@ -11,7 +11,7 @@ export default function ShippingLabelModal({ order, onClose }) {
   const awb = order.trackingNumber || `FMPC${order._id.slice(-8).toUpperCase()}`;
   const orderId = `OD${order._id.slice(-16).toUpperCase()}`;
   const courier = order.courier || "E-Kart Logistics";
-  const isPrepaid = true; // or based on payment
+  const isPrepaid = true;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-xs p-4 overflow-y-auto">
@@ -19,7 +19,7 @@ export default function ShippingLabelModal({ order, onClose }) {
       {/* Modal Container */}
       <div className="bg-white rounded-3xl max-w-xl w-full p-6 shadow-2xl border border-slate-200 my-8">
         
-        {/* Header Action Bar (Print me hide ho jayega) */}
+        {/* Header Action Bar */}
         <div className="print:hidden flex items-center justify-between pb-4 mb-4 border-b border-slate-100">
           <div>
             <h3 className="text-base font-black text-slate-900">Flipkart Style Shipping Label</h3>
@@ -41,7 +41,7 @@ export default function ShippingLabelModal({ order, onClose }) {
           </div>
         </div>
 
-        {/* 🟢 EXACT FLIPKART SHIPPING LABEL (4x6 Aspect Ratio Thermal Friendly) */}
+        {/* 🟢 EXACT FLIPKART SHIPPING LABEL (4x6 Aspect Ratio) */}
         <div className="border border-slate-900 p-4 bg-white text-slate-950 font-sans text-xs leading-tight print:p-0 print:border-none">
           
           {/* Top Row: STD | E-Kart Logistics | Order ID | COD/PREPAID */}
@@ -72,7 +72,7 @@ export default function ShippingLabelModal({ order, onClose }) {
                 </div>
               </div>
 
-              {/* Vertical Barcode Mock */}
+              {/* Vertical Barcode */}
               <div className="py-4 my-auto flex items-center justify-center gap-1">
                 <span className="text-[9px] font-mono font-bold -rotate-90 origin-center whitespace-nowrap text-slate-500">
                   AWB No. {awb}
@@ -96,7 +96,6 @@ export default function ShippingLabelModal({ order, onClose }) {
               
               {/* QR Code Block */}
               <div className="p-3 border-b border-slate-900 flex items-center justify-center bg-slate-50/50">
-                {/* 2D DataMatrix Simulation */}
                 <div className="w-32 h-32 border-2 border-slate-900 p-1 grid grid-cols-8 gap-0.5 bg-white">
                   {Array.from({ length: 64 }).map((_, i) => (
                     <div 
