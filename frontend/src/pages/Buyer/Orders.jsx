@@ -5,7 +5,7 @@ import {
     FaArrowRight,
     FaReceipt,
 } from "react-icons/fa";
-import { MapPin,Package } from "lucide-react";
+import { MapPin,Package,Truck } from "lucide-react";
 import { useDispatch, useSelector } from "react-redux";
 
 import { getMyOrders } from "../../features/order/orderAPI";
@@ -127,10 +127,19 @@ function Orders() {
                                                 <p className="text-sm font-bold mt-1">₹{Number(order.totalamount).toLocaleString("en-IN")}</p>
                                             </div>
                                         </div>
-                                        <div>
+                                                                                <div className="flex items-center gap-3">
                                             <span className="inline-flex items-center px-3 py-1 border border-slate-300 bg-white text-[10px] font-bold uppercase tracking-widest text-slate-700">
                                                 {order.orderstatus}
                                             </span>
+
+                                            {/* 🟢 Track Order Live Button */}
+                                            <Link
+                                                to={`/track-order?id=${order._id}`}
+                                                className="inline-flex items-center gap-1.5 px-3 py-1 bg-purple-50 hover:bg-purple-100 text-purple-700 border border-purple-200 text-[11px] font-bold rounded-lg transition-colors cursor-pointer"
+                                            >
+                                                <Truck className="w-3.5 h-3.5" />
+                                                Track Order
+                                            </Link>
                                         </div>
                                     </div>
                                 </div>
