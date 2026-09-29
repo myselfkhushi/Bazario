@@ -198,53 +198,74 @@ function SellerOrders() {
                                             </span>
                                         </div>
 
-                                        {/* 🟢 Seller Action Buttons Based on Status */}
+                                                                                {/* 🟢 Flipkart Style Seller Action Pipeline */}
                                         <div className="space-y-2">
+                                            
+                                            {/* Step 1: New Order -> Generate Label */}
                                             {order.orderstatus === "pending" && (
                                                 <button
                                                     disabled={updatingOrderId === order._id}
-                                                    onClick={() => handleQuickStatus(order._id, "confirmed")}
-                                                    className="w-full py-2 px-3 bg-purple-600 hover:bg-purple-700 text-white rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 shadow-sm shadow-purple-200"
+                                                    onClick={() => {
+                                                        setSelectedLabelOrder(order);
+                                                        handleQuickStatus(order._id, "processing");
+                                                    }}
+                                                    className="w-full py-2 px-3 bg-purple-600 hover:bg-purple-700 text-white rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 shadow-sm shadow-purple-200 cursor-pointer"
                                                 >
-                                                    <Check className="w-3.5 h-3.5" /> Accept & Confirm
+                                                    <Printer className="w-3.5 h-3.5" /> Generate & Print Label
                                                 </button>
                                             )}
 
-                                            {order.orderstatus === "confirmed" && (
-                                                <button
-                                                    disabled={updatingOrderId === order._id}
-                                                    onClick={() => handleQuickStatus(order._id, "processing")}
-                                                    className="w-full py-2 px-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 shadow-sm shadow-indigo-200"
-                                                >
-                                                    <Clock className="w-3.5 h-3.5" /> Start Packing
-                                                </button>
-                                            )}
-
+                                            {/* Step 2: Pending RTD -> Pack & Mark RTD */}
                                             {order.orderstatus === "processing" && (
-                                                <button
-                                                    disabled={updatingOrderId === order._id}
-                                                    onClick={() => setDispatchModalOrder(order)}
-                                                    className="w-full py-2 px-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 shadow-sm shadow-blue-200"
-                                                >
-                                                    <Truck className="w-3.5 h-3.5" /> Dispatch / Ship Parcel
-                                                </button>
-                                            )}
-
-                                            {order.orderstatus === "shipped" && (
-                                                <div className="p-2.5 bg-blue-50 border border-blue-200 rounded-xl text-[11px] text-blue-900 font-semibold space-y-0.5">
-                                                    <p>Courier: <strong>{order.courier || "Express"}</strong></p>
-                                                    <p>AWB: <strong>{order.trackingNumber || "N/A"}</strong></p>
-                                                    <p className="text-[10px] text-blue-600 font-medium pt-1">Handed over to courier. In transit.</p>
+                                                <div className="space-y-1.5">
+                                                    <button
+                                                        onClick={() => setSelectedLabelOrder(order)}
+                                                        className="w-full py-1.5 px-3 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 border border-slate-200 cursor-pointer"
+                                                    >
+                                                        <Printer className="w-3.5 h-3.5" /> Re-Print Label
+                                                    </button>
+                                                    <button
+                                                        disabled={updatingOrderId === order._id}
+                                                        onClick={() => handleQuickStatus(order._id, "rtd")}
+                                                        className="w-full py-2 px-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 shadow-sm shadow-indigo-200 cursor-pointer"
+                                                    >
+                                                        <Check className="w-3.5 h-3.5" /> Mark RTD (Ready To Dispatch)
+                                                    </button>
                                                 </div>
                                             )}
 
+                                            {/* Step 3: RTD -> Courier Handover / Pickup */}
+                                            {order.orderstatus === "rtd" && (
+                                                <div className="space-y-1.5">
+                                                    <div className="p-2 bg-amber-50 border border-amber-200 rounded-xl text-[10px] text-amber-900 font-semibold text-center">
+                                                        📦 Order Packed. Awaiting Courier Pickup.
+                                                    </div>
+                                                    <button
+                                                        disabled={updatingOrderId === order._id}
+                                                        onClick={() => setDispatchModalOrder(order)}
+                                                        className="w-full py-2 px-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 shadow-sm shadow-blue-200 cursor-pointer"
+                                                    >
+                                                        <Truck className="w-3.5 h-3.5" /> Handover to Courier (Pickup Done)
+                                                    </button>
+                                                </div>
+                                            )}
+
+                                            {/* Step 4: Shipped & In Transit */}
+                                            {order.orderstatus === "shipped" && (
+                                                <div className="p-2.5 bg-blue-50 border border-blue-200 rounded-xl text-[11px] text-blue-900 font-semibold space-y-0.5">
+                                                    <p>Courier: <strong>{order.courier || "E-Kart Logistics"}</strong></p>
+                                                    <p>AWB: <strong>{order.trackingNumber || "Assigned"}</strong></p>
+                                                    <p className="text-[10px] text-blue-600 font-medium pt-1">✅ Picked up by courier. In transit to hub.</p>
+                                                </div>
+                                            )}
+
+                                            {/* Step 5: Delivered */}
                                             {order.orderstatus === "delivered" && (
                                                 <p className="text-[11px] font-bold text-emerald-700 bg-emerald-50 px-3 py-1.5 rounded-lg border border-emerald-200 text-center">
                                                     Delivered to Customer
                                                 </p>
                                             )}
                                         </div>
-                                    </div>
 
                                     {/* Customer Info */}
                                     <div>

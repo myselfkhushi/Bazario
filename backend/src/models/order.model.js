@@ -61,6 +61,7 @@ const orderSchema= new mongoose.Schema({
            "pending",
            "confirmed",
            "processing",
+           "rtd",
            "shipped",
            "out_for_delivery",
            "delivered",

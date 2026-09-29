@@ -98,6 +98,7 @@ export const updateSellerOrderStatus = asynchandler(async (req, res) => {
     const allowedSellerStatuses = [
         "confirmed",
         "processing",
+        "rtd",
         "shipped",
         "cancelled"
     ];
@@ -132,6 +133,7 @@ export const updateSellerOrderStatus = asynchandler(async (req, res) => {
     const defaultMessages = {
         confirmed: "Order confirmed by seller and being prepared.",
         processing: "Items are being packed securely for dispatch.",
+         rtd: "Order packed securely and Ready to Dispatch (RTD). Awaiting courier pickup.",
         shipped: `Package dispatched via ${courier || order.courier} (AWB: ${trackingNumber || order.trackingNumber}). Handed over to logistics partner.`,
         cancelled: "Order cancelled by seller due to inventory constraints.",
     };
