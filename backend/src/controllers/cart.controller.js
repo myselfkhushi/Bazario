@@ -1,152 +1,162 @@
-import Cart from "../models/cart.model.js"
+import mongoose from "mongoose";
+import Cart from "../models/cart.model.js";
+import Product from "../models/product.model.js";
 import ApiError from "../utils/apierror.js";
 import asynchandler from "../utils/asynchandler.js";
-import Product from "../models/product.model.js";
 
-export const addtocart =asynchandler( async (req,res)=>{
-    
-        const {product,quantity} = req.body;
+// 1. ADD TO CART
+export const addtocart = asynchandler(async (req, res) => {
+    const { product, quantity } = req.body;
 
-        if(!product || !quantity){
-            throw new ApiError("product and quantity is required",400);
+    // 1. Basic & ID Validation
+    if (!product || !quantity) {
+        throw new ApiError("Product ID and quantity are required", 400);
+    }
+
+    if (!mongoose.Types.ObjectId.isValid(product)) {
+        throw new ApiError("Invalid product ID format", 400);
+    }
+
+    const parsedQuantity = Number(quantity);
+    if (Number.isNaN(parsedQuantity) || parsedQuantity <= 0) {
+        throw new ApiError("Quantity must be a positive number greater than 0", 400);
+    }
+
+    // 2. Pehle Product check karo (Dukan mein samaan hai ya nahi?)
+    const productData = await Product.findById(product);
+    if (!productData) {
+        throw new ApiError("Product not found in database", 404);
+    }
+
+    // 3. Check karo user ki cart mein ye pehle se hai ya nahi
+    const existingCartItem = await Cart.findOne({
+        user: req.user._id,
+        product,
+    });
+
+    // Case A: Agar pehle se cart mein hai (Update Quantity)
+    if (existingCartItem) {
+        const totalQuantity = existingCartItem.quantity + parsedQuantity;
+
+        if (totalQuantity > productData.stock) {
+            throw new ApiError(
+                `Cannot add. Available stock is ${productData.stock}, you already have ${existingCartItem.quantity} in cart`,
+                400
+            );
         }
 
-        if(quantity <= 0){
-            throw new ApiError("quantity never be negative",400);
-        }
+        existingCartItem.quantity = totalQuantity;
+        await existingCartItem.save();
+        await existingCartItem.populate("product");
 
-        
-        const existingcartitem=await Cart.findOne({
-            user:req.user._id,
-            product,
-        })
-
-        const productData = await Product.findById(product);
-
-        if(!productData){
-           throw new ApiError("product not present in database",400);
-        }
-
-        if(existingcartitem){
-            if(existingcartitem.quantity + quantity > productData.stock){
-                throw new ApiError("product is out of stock",400);
-            }
-            
-            existingcartitem.quantity+=quantity;
-
-            await existingcartitem.save();
-            await existingcartitem.populate("product");
-
-            return res.status(200).json({
-                success:true,
-                message:"product cart updated successfully",
-                cartitem:existingcartitem,
-            })
-
-        }
-
-
-        if(productData.stock < quantity){
-            throw new ApiError("product is out of stock",400);
-        }
-
-        const cartitem= await Cart.create({
-            user:req.user._id,
-            product,
-            quantity,
+        return res.status(200).json({
+            success: true,
+            message: "Cart quantity updated successfully",
+            cartItem: existingCartItem,
         });
-        await cartitem.populate("product");
-
-        res.status(201).json({
-            success:true,
-            message:"product added to cart",
-            cartitem,
-        })
-   
-})
-
-export const getmycart= asynchandler(async (req,res)=>{
-   
-        const cartitem=await Cart.find({
-            user:req.user._id
-        })
-        .populate("product")
-        .populate("user","name email")
-
-         res.status(200).json({
-            success:true,
-            count:cartitem.length,
-            cart:cartitem
-         })
-})
-
-export const updatecart= asynchandler(async(req,res)=>{
-
-     const { quantity } = req.body;
-
-    if (quantity === undefined) {
-        throw new ApiError("Quantity is required", 400);
     }
 
-    if ( quantity <= 0) {
-        throw new ApiError("Quantity must be greater than 0", 400);
+    // Case B: Pehli baar cart mein daal rahe hain (Create New)
+    if (parsedQuantity > productData.stock) {
+        throw new ApiError(`Requested quantity exceeds available stock (${productData.stock})`, 400);
     }
-    
-        const cartitem = await Cart.findById(req.params.id);
 
-        console.log("cartitem",cartitem);
+    const cartItem = await Cart.create({
+        user: req.user._id,
+        product,
+        quantity: parsedQuantity,
+    });
 
+    await cartItem.populate("product");
 
-        if(!cartitem){
-            throw new ApiError("cart  not found",404);
-        }
+    return res.status(201).json({
+        success: true,
+        message: "Product added to cart successfully",
+        cartItem,
+    });
+});
 
+// 2. GET MY CART
+export const getmycart = asynchandler(async (req, res) => {
+    // .lean() lagaya taaki query fast ho aur RAM bache (Read-only query)
+    const cartItems = await Cart.find({
+        user: req.user._id,
+    })
+    .populate("product")
+    .lean();
 
-        if(cartitem.user.toString() !== req.user._id.toString()){
-           throw new ApiError("unauthorize user",403);
-        }
+    return res.status(200).json({
+        success: true,
+        count: cartItems.length,
+        cart: cartItems,
+    });
+});
 
-    const productData = await Product.findById(cartitem.product);
+// 3. UPDATE CART QUANTITY
+export const updatecart = asynchandler(async (req, res) => {
+    const { id } = req.params;
+    const { quantity } = req.body;
 
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+        throw new ApiError("Invalid cart item ID", 400);
+    }
+
+    const parsedQuantity = Number(quantity);
+    if (Number.isNaN(parsedQuantity) || parsedQuantity <= 0) {
+        throw new ApiError("Quantity must be a positive number greater than 0", 400);
+    }
+
+    // Database level security: item ki ID bhi match ho AUR user bhi logged-in user hi ho!
+    const cartItem = await Cart.findOne({
+        _id: id,
+        user: req.user._id,
+    });
+
+    if (!cartItem) {
+        throw new ApiError("Cart item not found or unauthorized", 404);
+    }
+
+    // Product ka stock check karo
+    const productData = await Product.findById(cartItem.product);
     if (!productData) {
         throw new ApiError("Product not found", 404);
     }
 
-    if (quantity > productData.stock) {
-        throw new ApiError("Requested quantity exceeds available stock", 400);
+    if (parsedQuantity > productData.stock) {
+        throw new ApiError(`Requested quantity exceeds available stock (${productData.stock})`, 400);
     }
 
-    cartitem.quantity = quantity;
+    cartItem.quantity = parsedQuantity;
+    await cartItem.save();
+    await cartItem.populate("product");
 
-    await cartitem.save();
-    await cartitem.populate("product");
+    return res.status(200).json({
+        success: true,
+        message: "Cart updated successfully",
+        cartItem,
+    });
+});
 
-        res.status(200).json({
-            success:true,
-            message:"product updated successfully",
-            cartitem,
-        })
-    
-})
+// 4. REMOVE ITEM FROM CART
+export const removecartitem = asynchandler(async (req, res) => {
+    const { id } = req.params;
 
-export const removecartitem =asynchandler( async(req,res)=>{
-    
-        const cartitem=await Cart.findById(req.params.id);
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+        throw new ApiError("Invalid cart item ID", 400);
+    }
 
-        if(!cartitem){
-            throw new ApiError("cart item not found",404);
-        }
+    // Atomic Delete: Ek hi jhatke mein security check aur delete!
+    const deletedItem = await Cart.findOneAndDelete({
+        _id: id,
+        user: req.user._id,
+    });
 
-        if(cartitem.user.toString() !== req.user._id.toString()){
-            throw new ApiError("unauthorize user",403);
-        }
+    if (!deletedItem) {
+        throw new ApiError("Cart item not found or unauthorized", 404);
+    }
 
-        await cartitem.deleteOne();
-
-        res.status(200).json({
-            success:true,
-            message:"cart item deleted successfully"
-        })
-    
-})
-
+    return res.status(200).json({
+        success: true,
+        message: "Cart item removed successfully",
+    });
+});

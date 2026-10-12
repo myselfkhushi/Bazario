@@ -32,9 +32,9 @@ const productSchema = new mongoose.Schema({
             },
         ],
         
-        imagepublicid:{
-            type:String
-        },
+        // imagepublicid:{
+        //     type:String
+        // },
         category:{
             type:String,
             required:true
@@ -114,7 +114,7 @@ productSchema.methods.updateRating=async function(){
 }
 
 productSchema.index({ title: "text", brand: "text", description: "text" });
-// 🟢 2. Category aur Price filters ko millisecond me execute karne ke liye
+
 productSchema.index({ category: 1, price: 1 });
 
 productSchema.index({ brand: 1 });
