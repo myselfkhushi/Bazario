@@ -14,6 +14,8 @@ const getCookieOptions = () => {
     };
 };
 
+
+
 export const registerUser = asynchandler(async (req, res) => {
     const { name, email, password } = req.body;
 
@@ -83,6 +85,8 @@ export const loginUser = asynchandler(async (req, res) => {
     });
 });
 
+
+
 export const getProfile = asynchandler(async (req, res) => {
     // req.user Auth Middleware se aata hai
     res.status(200).json({
@@ -90,6 +94,9 @@ export const getProfile = asynchandler(async (req, res) => {
         user: req.user,
     });
 });
+
+
+
 
 export const logoutUser = asynchandler(async (req, res) => {
     const { maxAge, ...clearOptions } = getCookieOptions();
@@ -107,6 +114,11 @@ export const adminDashboard = asynchandler(async (req, res) => {
         message: "Welcome admin",
     });
 });
+
+
+
+
+
 
 export const updateProfile = asynchandler(async (req, res) => {
     const { name, email } = req.body;
