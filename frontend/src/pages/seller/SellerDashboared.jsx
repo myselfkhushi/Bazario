@@ -17,8 +17,7 @@ import {
     Store,
     Layers,
     AlertCircle,
-    RotateCcw,
-    FileText
+    Eye
 } from "lucide-react";
 
 import { getSellerOrders } from "../../features/seller/sellerSlice";
@@ -55,7 +54,7 @@ export default function SellerDashboared() {
         return Array.from(map.values());
     }, [localOrders, orders]);
 
-    // Track which orders have had their labels printed
+    // Track which orders have had their labels printed (Once printed in Print Labels, print button is consumed!)
     const [printedOrderIds, setPrintedOrderIds] = useState(() => {
         try {
             const saved = localStorage.getItem("seller_printed_orders");
@@ -79,7 +78,7 @@ export default function SellerDashboared() {
     };
 
     // Modals
-    const [selectedLabelOrder, setSelectedLabelOrder] = useState(null);
+    const [selectedLabelModal, setSelectedLabelModal] = useState(null); // { order, canPrint: boolean }
     const [dispatchModalOrder, setDispatchModalOrder] = useState(null);
     const [courierName, setCourierName] = useState("Delhivery Surface");
     const [awbNumber, setAwbNumber] = useState("");
@@ -88,14 +87,18 @@ export default function SellerDashboared() {
         dispatch(getSellerOrders());
     }, [dispatch]);
 
+    // Helper: Checks if order is Shipped or Delivered
+    const isShippedOrDelivered = (st) => ["shipped", "out_for_delivery", "delivered"].includes(st?.toLowerCase());
+
     // Live counts for all pipeline stages
     const counts = {
-        all: uniqueOrders.length,
         new: uniqueOrders.filter((o) => ["pending", "confirmed"].includes(o.orderstatus?.toLowerCase())).length,
         print_label: uniqueOrders.filter((o) => o.orderstatus?.toLowerCase() === "processing").length,
         handover: uniqueOrders.filter((o) => o.orderstatus?.toLowerCase() === "rtd").length,
         in_transit: uniqueOrders.filter((o) => ["shipped", "out_for_delivery"].includes(o.orderstatus?.toLowerCase())).length,
         delivered: uniqueOrders.filter((o) => o.orderstatus?.toLowerCase() === "delivered").length,
+        // 🛑 RULE: 'All Orders' only counts shipped or delivered orders!
+        all: uniqueOrders.filter((o) => isShippedOrDelivered(o.orderstatus)).length,
     };
 
     // Filter orders according to selected tab
@@ -106,7 +109,9 @@ export default function SellerDashboared() {
         if (activeTab === "handover") return st === "rtd";
         if (activeTab === "in_transit") return ["shipped", "out_for_delivery"].includes(st);
         if (activeTab === "delivered") return st === "delivered";
-        return true; // "all"
+        // 🛑 RULE: In 'All Orders' tab, show ONLY shipped or delivered orders!
+        if (activeTab === "all") return isShippedOrDelivered(st);
+        return true;
     });
 
     // ⚡ CONCURRENCY & OPTIMISTIC STATUS UPDATE
@@ -240,7 +245,7 @@ export default function SellerDashboared() {
             icon: Layers,
             badgeBg: "bg-slate-800 text-white",
             activeColor: "border-slate-800 text-slate-900 bg-slate-50",
-            desc: "All historical orders received across all states"
+            desc: "Shipped & Delivered orders only"
         },
     ];
 
@@ -321,7 +326,7 @@ export default function SellerDashboared() {
                     <h3 className="text-base font-black text-slate-800">No Orders in this Section</h3>
                     <p className="text-xs text-slate-400 mt-1 max-w-sm mx-auto font-medium">
                         There are currently no orders in <span className="font-bold text-slate-600">{currentTabInfo.label}</span>. 
-                        New orders will show up here automatically when customers purchase your products.
+                        Orders matching this stage will show up here automatically.
                     </p>
                 </div>
             ) : (
@@ -452,9 +457,9 @@ export default function SellerDashboared() {
 
                                 {/* Bottom Action Buttons */}
                                 <div className="pt-3 border-t border-slate-100 flex flex-wrap items-center justify-between gap-3">
-                                    {/* Left Status Indicators */}
+                                    {/* Left: Status Badge or View-Only Button for other sections */}
                                     <div>
-                                        {st === "processing" && (
+                                        {st === "processing" ? (
                                             isLabelPrinted ? (
                                                 <span className="text-xs font-bold text-emerald-700 bg-emerald-50 px-3 py-1.5 rounded-xl border border-emerald-200 flex items-center gap-1.5">
                                                     <Check className="w-3.5 h-3.5 text-emerald-600" />
@@ -466,23 +471,23 @@ export default function SellerDashboared() {
                                                     Label Print Required
                                                 </span>
                                             )
-                                        )}
-
-                                        {/* For already shipped or delivered orders, can print invoice anytime */}
-                                        {st !== "processing" && st !== "pending" && st !== "confirmed" && (
-                                            <button
-                                                onClick={() => setSelectedLabelOrder(order)}
-                                                className="px-3 py-1.5 rounded-xl text-xs font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 transition flex items-center gap-1.5 cursor-pointer"
-                                            >
-                                                <FileText className="w-3.5 h-3.5" />
-                                                View Label / Invoice
-                                            </button>
+                                        ) : (
+                                            /* 🛑 RULE 3: In all other sections, seller can ONLY VIEW the label/invoice (cannot print!) */
+                                            st !== "pending" && st !== "confirmed" && (
+                                                <button
+                                                    onClick={() => setSelectedLabelModal({ order, canPrint: false })}
+                                                    className="px-3.5 py-1.5 rounded-xl text-xs font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 transition flex items-center gap-1.5 cursor-pointer"
+                                                >
+                                                    <Eye className="w-3.5 h-3.5 text-slate-500" />
+                                                    View Label & Invoice
+                                                </button>
+                                            )
                                         )}
                                     </div>
 
                                     {/* Right Action Buttons */}
                                     <div className="flex items-center gap-2">
-                                        {/* ── STAGE 1: NEW ORDERS ────────────────────────── */}
+                                        {/* ── STAGE 1: NEW ORDERS (No printing allowed, only accept) ── */}
                                         {["pending", "confirmed"].includes(st) && (
                                             <button
                                                 disabled={isOrderInFlight}
@@ -500,16 +505,16 @@ export default function SellerDashboared() {
                                             </button>
                                         )}
 
-                                        {/* ── STAGE 2: PRINT LABELS TAB ─────────────────── */}
+                                        {/* ── STAGE 2: PRINT LABELS TAB (Print ONCE -> Then only Mark Packed) ── */}
                                         {st === "processing" && (
                                             <>
-                                                {/* STEP 1: Before Label is Printed: ONLY Show 'Print Shipping Label' */}
+                                                {/* STEP 1: Before Print -> Show 'Print Shipping Label' */}
                                                 {!isLabelPrinted ? (
                                                     <button
                                                         onClick={() => {
-                                                            setSelectedLabelOrder(order);
+                                                            setSelectedLabelModal({ order, canPrint: true });
                                                             markLabelAsPrinted(order._id);
-                                                            toast.success("Opening label... Print it now to unlock dispatch!");
+                                                            toast.success("Printing label! Now mark as packed to move forward.");
                                                         }}
                                                         className="px-5 py-2.5 rounded-xl text-xs font-bold bg-indigo-600 hover:bg-indigo-700 text-white shadow-xs transition flex items-center gap-2 cursor-pointer"
                                                     >
@@ -517,32 +522,21 @@ export default function SellerDashboared() {
                                                         Print Shipping Label & Invoice
                                                     </button>
                                                 ) : (
-                                                    /* STEP 2: After Label is Printed: NOW Show 'Mark Packed & Ready for Pickup' */
-                                                    <div className="flex items-center gap-2">
-                                                        <button
-                                                            onClick={() => setSelectedLabelOrder(order)}
-                                                            className="px-3.5 py-2 rounded-xl text-xs font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 transition flex items-center gap-1.5 cursor-pointer"
-                                                            title="Re-print shipping label"
-                                                        >
-                                                            <RotateCcw className="w-3.5 h-3.5" />
-                                                            Re-print
-                                                        </button>
-
-                                                        <button
-                                                            disabled={isOrderInFlight}
-                                                            onClick={() =>
-                                                                handleQuickStatus(
-                                                                    order._id,
-                                                                    "rtd",
-                                                                    "Packed! Order moved to Handover to Courier."
-                                                                )
-                                                            }
-                                                            className="px-5 py-2.5 rounded-xl text-xs font-bold bg-purple-600 hover:bg-purple-700 text-white shadow-xs transition flex items-center gap-2 cursor-pointer disabled:opacity-50 animate-[fadeIn_0.2s_ease-out]"
-                                                        >
-                                                            <CheckCircle2 className="w-4 h-4" />
-                                                            {isOrderInFlight ? "Moving..." : "Product Packed & Ready for Pickup"}
-                                                        </button>
-                                                    </div>
+                                                    /* 🛑 STEP 2: After Print -> ONLY 'Mark Packed & Ready for Pickup' (No re-print button!) */
+                                                    <button
+                                                        disabled={isOrderInFlight}
+                                                        onClick={() =>
+                                                            handleQuickStatus(
+                                                                order._id,
+                                                                "rtd",
+                                                                "Packed! Order moved to Handover to Courier."
+                                                            )
+                                                        }
+                                                        className="px-5 py-2.5 rounded-xl text-xs font-bold bg-purple-600 hover:bg-purple-700 text-white shadow-xs transition flex items-center gap-2 cursor-pointer disabled:opacity-50 animate-[fadeIn_0.2s_ease-out]"
+                                                    >
+                                                        <CheckCircle2 className="w-4 h-4" />
+                                                        {isOrderInFlight ? "Moving..." : "Product Packed & Ready for Pickup"}
+                                                    </button>
                                                 )}
                                             </>
                                         )}
@@ -585,11 +579,12 @@ export default function SellerDashboared() {
                 </div>
             )}
 
-            {/* Print Shipping Label Modal */}
-            {selectedLabelOrder && (
+            {/* Shipping Label Modal (Print enabled in Print Labels tab, View-Only in all other tabs) */}
+            {selectedLabelModal && (
                 <ShippingLabelModal
-                    order={selectedLabelOrder}
-                    onClose={() => setSelectedLabelOrder(null)}
+                    order={selectedLabelModal.order}
+                    canPrint={selectedLabelModal.canPrint}
+                    onClose={() => setSelectedLabelModal(null)}
                 />
             )}
 
