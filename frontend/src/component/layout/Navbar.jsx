@@ -46,6 +46,9 @@ export default function Navbar() {
   const navigate = useNavigate();
   const location = useLocation();
 
+  // Route flags
+  const isAuthPage = location.pathname === "/login" || location.pathname === "/register";
+
   // Item counts
   const cartCount = isAuthenticated ? (cart?.length ?? 0) : (guestCart?.length ?? 0);
   const wishlistCount = isAuthenticated ? (wishlist?.length ?? 0) : (guestWishlist?.length ?? 0);
@@ -346,8 +349,8 @@ export default function Navbar() {
 
           {/* Right Action Icons */}
           <div className="flex items-center gap-1 sm:gap-3">
-            {/* Sell on Bazario (if buyer or guest) */}
-            {(!isAuthenticated || user?.role === "buyer") && (
+            {/* Sell on Bazario (if buyer or guest and NOT on auth pages) */}
+            {!isAuthPage && (!isAuthenticated || user?.role === "buyer") && (
               <Link
                 to={isAuthenticated ? "/seller/dashboard" : "/login"}
                 className="hidden xl:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-700 hover:text-purple-600 hover:bg-slate-50 border border-slate-200 transition"
@@ -357,33 +360,37 @@ export default function Navbar() {
               </Link>
             )}
 
-            {/* Wishlist */}
-            <Link
-              to="/wishlist"
-              className="flex items-center gap-1.5 p-2 rounded-xl text-slate-700 hover:text-purple-600 hover:bg-slate-50 transition relative group"
-            >
-              <Heart className="w-5 h-5 transition group-hover:scale-110" />
-              <span className="hidden md:inline text-xs font-semibold">Wishlist</span>
-              {wishlistCount > 0 && (
-                <span className="absolute 0 top-1 right-1 md:top-0 md:right-auto md:left-5 w-4 h-4 rounded-full bg-rose-500 text-white text-[10px] font-black flex items-center justify-center ring-2 ring-white">
-                  {wishlistCount}
-                </span>
-              )}
-            </Link>
+            {/* Wishlist (Hidden on Login / Register pages) */}
+            {!isAuthPage && (
+              <Link
+                to="/wishlist"
+                className="flex items-center gap-1.5 p-2 rounded-xl text-slate-700 hover:text-purple-600 hover:bg-slate-50 transition relative group"
+              >
+                <Heart className="w-5 h-5 transition group-hover:scale-110" />
+                <span className="hidden md:inline text-xs font-semibold">Wishlist</span>
+                {wishlistCount > 0 && (
+                  <span className="absolute 0 top-1 right-1 md:top-0 md:right-auto md:left-5 w-4 h-4 rounded-full bg-rose-500 text-white text-[10px] font-black flex items-center justify-center ring-2 ring-white">
+                    {wishlistCount}
+                  </span>
+                )}
+              </Link>
+            )}
 
-            {/* Cart */}
-            <Link
-              to="/cart"
-              className="flex items-center gap-1.5 p-2 rounded-xl text-slate-700 hover:text-purple-600 hover:bg-slate-50 transition relative group"
-            >
-              <ShoppingBag className="w-5 h-5 transition group-hover:scale-110" />
-              <span className="hidden md:inline text-xs font-semibold">Cart</span>
-              {cartCount > 0 && (
-                <span className="absolute top-1 right-1 md:top-0 md:right-auto md:left-5 w-4 h-4 rounded-full bg-purple-600 text-white text-[10px] font-black flex items-center justify-center ring-2 ring-white">
-                  {cartCount}
-                </span>
-              )}
-            </Link>
+            {/* Cart (Hidden on Login / Register pages) */}
+            {!isAuthPage && (
+              <Link
+                to="/cart"
+                className="flex items-center gap-1.5 p-2 rounded-xl text-slate-700 hover:text-purple-600 hover:bg-slate-50 transition relative group"
+              >
+                <ShoppingBag className="w-5 h-5 transition group-hover:scale-110" />
+                <span className="hidden md:inline text-xs font-semibold">Cart</span>
+                {cartCount > 0 && (
+                  <span className="absolute top-1 right-1 md:top-0 md:right-auto md:left-5 w-4 h-4 rounded-full bg-purple-600 text-white text-[10px] font-black flex items-center justify-center ring-2 ring-white">
+                    {cartCount}
+                  </span>
+                )}
+              </Link>
+            )}
 
             {/* User Profile */}
             {isAuthenticated ? (
@@ -481,51 +488,64 @@ export default function Navbar() {
                 )}
               </div>
             ) : (
-              <Link
-                to="/login"
-                className="px-4 py-2 rounded-xl bg-slate-900 hover:bg-purple-600 text-white text-xs font-bold transition shadow-sm"
-              >
-                Sign In
-              </Link>
+              location.pathname === "/login" ? (
+                <Link
+                  to="/register"
+                  className="px-4 py-2 rounded-xl bg-purple-50 text-purple-700 hover:bg-purple-100 text-xs font-bold transition border border-purple-200"
+                >
+                  Create Account
+                </Link>
+              ) : (
+                <Link
+                  to="/login"
+                  className="px-4 py-2 rounded-xl bg-slate-900 hover:bg-purple-600 text-white text-xs font-bold transition shadow-sm"
+                >
+                  Sign In
+                </Link>
+              )
             )}
           </div>
         </div>
 
         {/* Search Bar (Mobile Only) */}
-        <div className="lg:hidden pb-3">
-          <form onSubmit={handleSearchSubmit} className="relative">
-            <div className="flex items-center bg-slate-50 hover:bg-slate-100 focus-within:bg-white rounded-xl border border-slate-200 overflow-hidden px-3 shadow-sm">
-              <Search className="w-4 h-4 text-slate-400 shrink-0" />
-              <input
-                type="text"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search products..."
-                className="w-full py-2.5 px-3 text-xs bg-transparent text-slate-900 !outline-none !ring-0 !border-none !shadow-none"
-                style={{ boxShadow: "none" }}
-              />
-            </div>
-          </form>
-        </div>
+        {!isAuthPage && (
+          <div className="lg:hidden pb-3">
+            <form onSubmit={handleSearchSubmit} className="relative">
+              <div className="flex items-center bg-slate-50 hover:bg-slate-100 focus-within:bg-white rounded-xl border border-slate-200 overflow-hidden px-3 shadow-sm">
+                <Search className="w-4 h-4 text-slate-400 shrink-0" />
+                <input
+                  type="text"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder="Search products..."
+                  className="w-full py-2.5 px-3 text-xs bg-transparent text-slate-900 !outline-none !ring-0 !border-none !shadow-none"
+                  style={{ boxShadow: "none" }}
+                />
+              </div>
+            </form>
+          </div>
+        )}
       </div>
 
       {/* ── Secondary Category Sub-Nav Bar (Desktop) ──── */}
-      <div className="hidden lg:block border-t border-slate-100 bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <ul className="flex items-center gap-8 sm:gap-10 py-3 text-[13px] font-semibold text-slate-500 overflow-x-auto whitespace-nowrap scrollbar-hide">
-            {navCategories.map((cat, idx) => (
-              <li key={idx}>
-                <Link
-                  to={cat.path}
-                  className="hover:text-purple-600 transition hover:underline underline-offset-4"
-                >
-                  {cat.label}
-                </Link>
-              </li>
-            ))}
-          </ul>
+      {!isAuthPage && (
+        <div className="hidden lg:block border-t border-slate-100 bg-white">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <ul className="flex items-center gap-8 sm:gap-10 py-3 text-[13px] font-semibold text-slate-500 overflow-x-auto whitespace-nowrap scrollbar-hide">
+              {navCategories.map((cat, idx) => (
+                <li key={idx}>
+                  <Link
+                    to={cat.path}
+                    className="hover:text-purple-600 transition hover:underline underline-offset-4"
+                  >
+                    {cat.label}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
         </div>
-      </div>
+      )}
 
       {/* ── Mobile Navigation Drawer ──────────────────── */}
       {mobileOpen && (
