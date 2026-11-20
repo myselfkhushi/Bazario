@@ -11,6 +11,7 @@ import {
   Package,
   ClipboardList,
   LayoutDashboard,
+  PlusCircle,
   ChevronDown,
   Menu,
   X,
@@ -89,42 +90,145 @@ export default function Navbar() {
     const fetchSuggestions = async () => {
       if (!search.trim()) {
         setSuggestions([]);
-        setShowSuggestions(false);
         return;
       }
-      setIsSearching(true);
       try {
-        // Fetch products matching search
-        const { data } = await api.get(`/products?search=${encodeURIComponent(search.trim())}`);
-        if (data.success) {
-          // Limit to 5 suggestions
-          setSuggestions(data.products.slice(0, 5));
-          setShowSuggestions(true);
-        }
-      } catch (error) {
-        console.error("Failed to fetch suggestions", error);
+        setIsSearching(true);
+        const res = await api.get(`/products?keyword=${encodeURIComponent(search.trim())}&limit=5`);
+        setSuggestions(res.data.products || []);
+      } catch (err) {
+        setSuggestions([]);
       } finally {
         setIsSearching(false);
       }
     };
 
-    const debounceTimer = setTimeout(() => {
-      fetchSuggestions();
-    }, 300); // 300ms debounce
-
+    const debounceTimer = setTimeout(fetchSuggestions, 250);
     return () => clearTimeout(debounceTimer);
   }, [search]);
 
   const handleSearchSubmit = (e) => {
     e.preventDefault();
-    setShowSuggestions(false);
     if (search.trim()) {
-      navigate(`/shop?search=${encodeURIComponent(search.trim())}`);
-    } else {
-      navigate("/shop");
+      setShowSuggestions(false);
+      navigate(`/shop?keyword=${encodeURIComponent(search.trim())}`);
     }
   };
 
+  // =========================================================================
+  // 🛑 SPECIAL SELLER NAVBAR: When logged in as Seller, replace customer navbar!
+  // =========================================================================
+  if (isAuthenticated && user?.role === "seller") {
+    const sellerInitial = user?.name ? user.name.charAt(0).toUpperCase() : "S";
+
+    const sellerTabs = [
+      { path: "/seller/dashboard", label: "Dashboard", icon: LayoutDashboard },
+      { path: "/seller/add-product", label: "Add Product", icon: PlusCircle },
+      { path: "/seller/products", label: "My Products", icon: Package },
+      { path: "/seller/orders", label: "Orders", icon: ShoppingBag },
+    ];
+
+    return (
+      <header className="sticky top-0 z-50 bg-white border-b border-slate-200/80 shadow-xs">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between h-16">
+            {/* Left: Brand Logo & Seller Hub Badge */}
+            <div className="flex items-center gap-3">
+              <Link to="/seller/dashboard" className="flex items-center gap-2">
+                <span className="text-2xl font-black tracking-tight text-slate-900 font-sans">
+                  BAZARIO<span className="text-purple-600">.</span>
+                </span>
+                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-purple-50 text-purple-700 border border-purple-200/70">
+                  <Sparkles className="w-3 h-3 text-purple-600" />
+                  Seller Hub
+                </span>
+              </Link>
+            </div>
+
+            {/* Right: Seller Tabs + Profile Icon */}
+            <div className="flex items-center gap-2 sm:gap-4">
+              <nav className="flex items-center gap-1 sm:gap-2">
+                {sellerTabs.map((tab) => {
+                  const Icon = tab.icon;
+                  const isActive = location.pathname === tab.path || (tab.path === "/seller/dashboard" && location.pathname === "/");
+
+                  return (
+                    <Link
+                      key={tab.path}
+                      to={tab.path}
+                      className={`flex items-center gap-1.5 px-3 py-2 sm:px-3.5 sm:py-2 rounded-xl text-xs sm:text-sm font-bold transition-all ${
+                        isActive
+                          ? "bg-purple-600 text-white shadow-xs"
+                          : "text-slate-600 hover:text-slate-900 hover:bg-slate-100"
+                      }`}
+                    >
+                      <Icon className="w-4 h-4" />
+                      <span>{tab.label}</span>
+                    </Link>
+                  );
+                })}
+              </nav>
+
+              <div className="h-6 w-px bg-slate-200" />
+
+              {/* Profile Icon with Dropdown */}
+              <div className="relative" ref={profileRef}>
+                <button
+                  onClick={() => setOpenProfile(!openProfile)}
+                  className="flex items-center gap-2 p-1.5 sm:px-3 sm:py-2 rounded-xl hover:bg-slate-100 transition cursor-pointer"
+                >
+                  <div className="w-8 h-8 rounded-full bg-slate-900 text-white flex items-center justify-center font-black text-xs shadow-xs uppercase">
+                    {sellerInitial}
+                  </div>
+                  <span className="hidden md:inline text-xs font-bold text-slate-800 max-w-[90px] truncate">
+                    {user?.name?.split(" ")[0]}
+                  </span>
+                  <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
+                </button>
+
+                {openProfile && (
+                  <div className="absolute right-0 mt-2 w-56 bg-white rounded-2xl shadow-xl border border-slate-100 py-2 z-50 animate-fadeIn">
+                    <div className="px-4 py-3 border-b border-slate-100">
+                      <p className="text-xs font-bold text-slate-900 truncate">{user?.name}</p>
+                      <p className="text-[11px] text-slate-400 truncate mt-0.5">{user?.email}</p>
+                      <span className="inline-block mt-2 px-2 py-0.5 bg-purple-50 text-purple-700 text-[10px] font-black rounded-md uppercase tracking-wider">
+                        Verified Seller
+                      </span>
+                    </div>
+
+                    <div className="p-1 space-y-0.5">
+                      <Link
+                        to="/profile"
+                        onClick={() => setOpenProfile(false)}
+                        className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-bold text-slate-700 hover:bg-slate-50 transition"
+                      >
+                        <User className="w-4 h-4 text-slate-400" />
+                        Seller Profile
+                      </Link>
+                    </div>
+
+                    <div className="p-1 border-t border-slate-100 mt-1">
+                      <button
+                        onClick={handleLogout}
+                        className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-bold text-rose-600 hover:bg-rose-50 transition cursor-pointer"
+                      >
+                        <LogOut className="w-4 h-4" />
+                        Sign Out
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      </header>
+    );
+  }
+
+  // =========================================================================
+  // 🛍️ STANDARD BUYER / CUSTOMER NAVBAR
+  // =========================================================================
   const navCategories = [
     { label: "Shop", path: "/shop" },
     { label: "Electronics", path: "/shop?category=Electronics" },
@@ -163,7 +267,6 @@ export default function Navbar() {
                 </span>
               </Link>
             </div>
-
           </div>
 
           {/* Search Bar (Desktop) with Auto-Suggest */}
@@ -258,45 +361,37 @@ export default function Navbar() {
             <Link
               to="/wishlist"
               className="flex items-center gap-1.5 p-2 rounded-xl text-slate-700 hover:text-purple-600 hover:bg-slate-50 transition relative group"
-              title="Wishlist"
             >
-              <div className="relative">
-                <Heart className="w-5 h-5 text-slate-700 group-hover:text-purple-600 transition" />
-                {wishlistCount > 0 && (
-                  <span className="absolute -top-1.5 -right-1.5 min-w-[17px] h-[17px] rounded-full bg-rose-500 text-white text-[10px] font-bold flex items-center justify-center px-1 border-2 border-white">
-                    {wishlistCount}
-                  </span>
-                )}
-              </div>
-              <span className="hidden sm:inline-block text-xs font-semibold">Wishlist</span>
+              <Heart className="w-5 h-5 transition group-hover:scale-110" />
+              <span className="hidden md:inline text-xs font-semibold">Wishlist</span>
+              {wishlistCount > 0 && (
+                <span className="absolute 0 top-1 right-1 md:top-0 md:right-auto md:left-5 w-4 h-4 rounded-full bg-rose-500 text-white text-[10px] font-black flex items-center justify-center ring-2 ring-white">
+                  {wishlistCount}
+                </span>
+              )}
             </Link>
 
             {/* Cart */}
             <Link
               to="/cart"
               className="flex items-center gap-1.5 p-2 rounded-xl text-slate-700 hover:text-purple-600 hover:bg-slate-50 transition relative group"
-              title="Cart"
             >
-              <div className="relative">
-                <ShoppingBag className="w-5 h-5 text-slate-700 group-hover:text-purple-600 transition" />
-                {cartCount > 0 && (
-                  <span className="absolute -top-1.5 -right-1.5 min-w-[17px] h-[17px] rounded-full bg-purple-600 text-white text-[10px] font-bold flex items-center justify-center px-1 border-2 border-white">
-                    {cartCount}
-                  </span>
-                )}
-              </div>
-              <span className="hidden sm:inline-block text-xs font-semibold">Cart</span>
+              <ShoppingBag className="w-5 h-5 transition group-hover:scale-110" />
+              <span className="hidden md:inline text-xs font-semibold">Cart</span>
+              {cartCount > 0 && (
+                <span className="absolute top-1 right-1 md:top-0 md:right-auto md:left-5 w-4 h-4 rounded-full bg-purple-600 text-white text-[10px] font-black flex items-center justify-center ring-2 ring-white">
+                  {cartCount}
+                </span>
+              )}
             </Link>
 
-            <div className="h-6 w-px bg-slate-200 mx-1 hidden sm:block" />
-
-            {/* Profile Dropdown */}
+            {/* User Profile */}
             {isAuthenticated ? (
-              <div className="relative" ref={profileRef}>
+              <div className="relative ml-1 sm:ml-2" ref={profileRef}>
                 <button
                   type="button"
                   onClick={() => setOpenProfile(!openProfile)}
-                  className="flex items-center gap-2 p-1.5 pr-3 rounded-full hover:bg-slate-50 border border-transparent hover:border-slate-200 transition"
+                  className="flex items-center gap-2 p-1.5 rounded-xl hover:bg-slate-100 transition border border-transparent hover:border-slate-200"
                 >
                   <div className="w-7 h-7 rounded-full bg-slate-900 text-white flex items-center justify-center text-xs font-bold uppercase shrink-0">
                     {user?.name?.[0] || "U"}

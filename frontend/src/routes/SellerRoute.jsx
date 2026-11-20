@@ -9,7 +9,7 @@ function SellerRoute({children}){
     }
 
     if(user?.role !== "seller"){
-        return <Navigate to="/" replace/>
+        return <Navigate to="/seller/dashboard" replace/>
     }
 
     return children;

@@ -1,4 +1,5 @@
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { useSelector } from "react-redux";
 import MainLayout from "../component/layout/MainLayout.jsx";
 import Home from "../pages/Home";
 import Shop from "../pages/Shop";
@@ -38,6 +39,15 @@ import BulkOrders from "../pages/support/BulkOrders.jsx";
 import LegalPage from "../pages/legal/LegalPage.jsx";
 import ScrollToTop from "../component/common/ScrollToTop.jsx";
 
+// 🛑 Smart Home Route: If a seller visits "/", redirect directly to Seller Dashboard!
+function HomeRoute() {
+  const { user } = useSelector((state) => state.auth);
+  if (user?.role === "seller") {
+    return <Navigate to="/seller/dashboard" replace />;
+  }
+  return <Home />;
+}
+
 function AppRoutes() {
   return (
     <BrowserRouter>
@@ -45,7 +55,7 @@ function AppRoutes() {
       <Routes>
         {/* Public & Customer Routes — Rendered inside MainLayout (Includes Customer Navbar & Footer) */}
         <Route element={<MainLayout />}>
-          <Route path="/" element={<Home />} />
+          <Route path="/" element={<HomeRoute />} />
           <Route path="/shop" element={<Shop />} />
           <Route path="/product/:id" element={<ProductDetails />} />
           <Route path="/cart" element={<Cart />} />
@@ -79,7 +89,7 @@ function AppRoutes() {
           <Route path="/login" element={<Login />} />
         </Route>
 
-        {/* 🛑 SELLER PORTAL — OUTSIDE MainLayout (No customer Navbar/Categories/Cart/Wishlist) */}
+        {/* 🛑 SELLER PORTAL — OUTSIDE MainLayout (Dedicated Seller Hub Top Navbar & Pages) */}
         <Route element={<SellerRoute><SellerLayout /></SellerRoute>}>
           <Route path="/seller/dashboard" element={<SellerDashboared />} />
           <Route path="/seller/products" element={<MyProducts />} />

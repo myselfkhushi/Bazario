@@ -169,9 +169,9 @@ export default function SellerDashboared() {
                         <Store className="w-7 h-7 text-indigo-600" />
                         Seller Hub
                     </h1>
-                    <p className="text-slate-500 text-xs sm:text-sm mt-1 font-medium">
+                    {/* <p className="text-slate-500 text-xs sm:text-sm mt-1 font-medium">
                         Manage your end-to-end packing, label printing, and courier handovers in real time.
-                    </p>
+                    </p> */}
                 </div>
 
                 <button
@@ -181,6 +181,8 @@ export default function SellerDashboared() {
                     <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin text-indigo-600" : ""}`} />
                     Refresh Pipeline
                 </button>
+
+                
             </div>
 
             {/* Fulfillment Pipeline Tabs */}

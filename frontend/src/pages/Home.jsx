@@ -1,10 +1,12 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import { useSelector } from "react-redux";
 import { Truck, LockKeyhole, RotateCcw, Star, ArrowRight, Zap, Shirt, Sparkles, Home as HomeIcon } from "lucide-react";
 import HeroSection from "../component/Hero/HeroSection.jsx";
 import ProductCard from "../component/product/ProductCard.jsx";
 import ProductSkeleton from "../component/product/ProductSkeleton.jsx";
 import { getAllProducts } from "../features/product/productAPI";
+import SellerDashboared from "./seller/SellerDashboared.jsx";
 
 const FEATURES = [
     {
@@ -69,13 +71,16 @@ const HIGHLIGHT_CATEGORIES = [
 ];
 
 function Home() {
+    const { user, isAuthenticated } = useSelector((state) => state.auth);
     const [featuredProducts, setFeaturedProducts] = useState([]);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
+        // Fetch products only if not a seller
+        if (user?.role === "seller") return;
+
         const fetchFeatured = async () => {
             try {
-                // Fetch just a few newest products
                 const response = await getAllProducts({ sort: "newest" });
                 setFeaturedProducts((response.product || []).slice(0, 4));
             } catch (error) {
@@ -85,7 +90,16 @@ function Home() {
             }
         };
         fetchFeatured();
-    }, []);
+    }, [user?.role]);
+
+    // 🛑 If logged in as SELLER: Show Seller Dashboard instead of Buyer Home Page!
+    if (isAuthenticated && user?.role === "seller") {
+        return (
+            <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                <SellerDashboared />
+            </main>
+        );
+    }
 
     return (
         <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-10 bg-white font-sans text-slate-900">
@@ -108,83 +122,74 @@ function Home() {
 
                 {/* Bento Box Layout */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 auto-rows-[250px] gap-4">
-                    {HIGHLIGHT_CATEGORIES.map((cat) => (
+                    {HIGHLIGHT_CATEGORIES.map((cat, idx) => (
                         <Link 
-                            key={cat.name} 
-                            to={cat.path} 
-                            className={`group relative rounded-3xl overflow-hidden bg-slate-100 ${cat.colSpan} ${cat.rowSpan}`}
+                            key={idx} 
+                            to={cat.path}
+                            className={`group relative rounded-3xl overflow-hidden border border-slate-100 shadow-xs hover:shadow-xl transition-all duration-300 ${cat.colSpan} ${cat.rowSpan}`}
                         >
                             <img 
                                 src={cat.image} 
                                 alt={cat.name} 
-                                className="absolute inset-0 w-full h-full object-cover transition-transform duration-1000 group-hover:scale-105"
-                                loading="lazy"
+                                className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ease-out" 
                             />
+                            <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-slate-950/20 to-transparent"></div>
                             
-                            {/* Subtle gradient overlay to ensure text readability */}
-                            <div className="absolute inset-0 bg-gradient-to-t from-slate-900/80 via-slate-900/20 to-transparent"></div>
-                            
-                            <div className="absolute inset-0 p-8 flex flex-col justify-end z-10">
-                                <div className="text-white mb-3 bg-white/20 backdrop-blur-md w-12 h-12 flex items-center justify-center rounded-2xl transform translate-y-4 group-hover:translate-y-0 transition-transform duration-500">
-                                    {cat.icon}
+                            <div className="absolute bottom-0 left-0 right-0 p-6 sm:p-8 flex items-end justify-between">
+                                <div>
+                                    <span className="text-white/70 text-xs font-bold tracking-widest uppercase mb-1 block">{cat.desc}</span>
+                                    <h3 className="text-2xl sm:text-3xl font-black text-white tracking-tight">{cat.name}</h3>
                                 </div>
-                                <h3 className="text-2xl font-black text-white tracking-tight leading-none mb-1">{cat.name}</h3>
-                                <p className="text-slate-300 text-sm font-medium">{cat.desc}</p>
+                                <div className="w-10 h-10 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center text-white group-hover:bg-purple-600 transition-colors">
+                                    <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
+                                </div>
                             </div>
                         </Link>
                     ))}
                 </div>
             </section>
 
-            {/* ── Featured Products Section ─────────────────── */}
+            {/* ── Featured Products Carousel/Grid ──────────────────── */}
             <section className="mb-24">
                 <div className="flex items-end justify-between mb-10">
                     <div>
                         <h2 className="text-3xl sm:text-4xl font-black tracking-tight" style={{ fontFamily: "var(--font-heading)" }}>
                             New Arrivals
                         </h2>
-                        <p className="text-slate-500 mt-2 text-sm sm:text-base">The latest additions to our collection</p>
+                        <p className="text-slate-500 mt-2 text-sm sm:text-base">The freshest drops from top premium brands</p>
                     </div>
                     <Link to="/shop?sort=newest" className="hidden sm:flex items-center gap-2 text-xs font-bold text-purple-600 hover:text-purple-700 uppercase tracking-widest transition-colors">
-                        Shop Now <ArrowRight className="w-4 h-4" />
+                        Browse New <ArrowRight className="w-4 h-4" />
                     </Link>
                 </div>
 
                 {loading ? (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-8">
-                        {Array.from({ length: 4 }).map((_, i) => (
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6">
+                        {[...Array(4)].map((_, i) => (
                             <ProductSkeleton key={i} />
                         ))}
                     </div>
                 ) : (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-8">
-                        {featuredProducts.map((prod) => (
-                            <ProductCard key={prod._id} product={prod} />
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6">
+                        {featuredProducts.map((p) => (
+                            <ProductCard key={p._id} product={p} />
                         ))}
                     </div>
                 )}
-                
-                <div className="mt-10 text-center sm:hidden">
-                    <Link to="/shop" className="inline-flex items-center justify-center w-full py-4 border border-slate-200 bg-slate-50 text-xs font-bold text-slate-900 uppercase tracking-widest rounded-2xl">
-                        View All Products
-                    </Link>
-                </div>
             </section>
 
-            {/* ── Why Choose Bazario ────────────────── */}
-            <section className="mb-12 border-t border-slate-100 pt-16">
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
-                    {FEATURES.map((feat) => (
-                        <div key={feat.title} className="text-left bg-slate-50 p-8 rounded-3xl border border-slate-100">
-                            <div className="text-purple-600 mb-5 bg-purple-100 w-14 h-14 flex items-center justify-center rounded-2xl">
-                                {feat.icon}
+            {/* ── Value Props ──────────────────────────────────────── */}
+            <section className="py-12 border-t border-slate-100">
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-8">
+                    {FEATURES.map((f, i) => (
+                        <div key={i} className="flex flex-col sm:flex-row items-start sm:items-center gap-4 p-4 rounded-2xl hover:bg-slate-50 transition-colors">
+                            <div className="w-12 h-12 rounded-2xl bg-purple-50 text-purple-600 flex items-center justify-center shrink-0">
+                                {f.icon}
                             </div>
-                            <h3 className="text-lg font-black text-slate-900 mb-2 tracking-tight" style={{ fontFamily: "var(--font-heading)" }}>
-                                {feat.title}
-                            </h3>
-                            <p className="text-sm text-slate-500 leading-relaxed font-medium">
-                                {feat.desc}
-                            </p>
+                            <div>
+                                <h3 className="font-bold text-sm text-slate-900">{f.title}</h3>
+                                <p className="text-xs text-slate-500 mt-0.5 font-medium leading-relaxed">{f.desc}</p>
+                            </div>
                         </div>
                     ))}
                 </div>
