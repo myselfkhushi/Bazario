@@ -150,11 +150,17 @@ export default function SellerDashboared() {
         }
     };
 
-    // Direct Print Action: Automatically triggers browser print window!
+    // Direct Print Action: Automatically triggers print & save workflow
     const handleDirectPrint = (order) => {
-        markLabelAsPrinted(order._id);
+        // 🛑 CRITICAL: Do NOT mark as printed here!
+        // The order is marked as printed ONLY after the label is saved to device and printed.
         setSelectedLabelModal({ order, canPrint: true, autoPrint: true });
-        toast.success("Printing shipping label... Print dialog opened!");
+    };
+
+    // Callback invoked strictly when label is saved to device and printed
+    const handlePrintSuccess = (orderId) => {
+        markLabelAsPrinted(orderId);
+        toast.success("Shipping label saved & printed! You can now mark order as packed.");
     };
 
     // Handover to Courier Submit
@@ -499,12 +505,12 @@ export default function SellerDashboared() {
                                             isLabelPrinted ? (
                                                 <span className="text-xs font-bold text-emerald-700 bg-emerald-50 px-3 py-1.5 rounded-xl border border-emerald-200 flex items-center gap-1.5">
                                                     <Check className="w-3.5 h-3.5 text-emerald-600" />
-                                                    Shipping Label Printed
+                                                    Shipping Label Printed & Saved
                                                 </span>
                                             ) : (
                                                 <span className="text-xs font-bold text-amber-700 bg-amber-50 px-3 py-1.5 rounded-xl border border-amber-200 flex items-center gap-1.5">
                                                     <AlertCircle className="w-3.5 h-3.5 text-amber-600" />
-                                                    Label Print Required
+                                                    Label Print & Save Required
                                                 </span>
                                             )
                                         ) : (
@@ -544,14 +550,14 @@ export default function SellerDashboared() {
                                         {/* ── STAGE 2: PRINT LABELS TAB ─────────────────── */}
                                         {st === "processing" && (
                                             <>
-                                                {/* STEP 1: Before Print -> Pressing directly triggers printer dialog! */}
+                                                {/* STEP 1: Before Print -> Pressing triggers print & device save */}
                                                 {!isLabelPrinted ? (
                                                     <button
                                                         onClick={() => handleDirectPrint(order)}
                                                         className="px-5 py-2.5 rounded-xl text-xs font-bold bg-indigo-600 hover:bg-indigo-700 text-white shadow-xs transition flex items-center gap-2 cursor-pointer"
                                                     >
                                                         <Printer className="w-4 h-4" />
-                                                        Print Shipping Label
+                                                        Print & Save Shipping Label
                                                     </button>
                                                 ) : (
                                                     /* STEP 2: After Print -> ONLY 'Mark Packed & Ready for Pickup' */
@@ -617,6 +623,7 @@ export default function SellerDashboared() {
                     order={selectedLabelModal.order}
                     canPrint={selectedLabelModal.canPrint}
                     autoPrint={selectedLabelModal.autoPrint}
+                    onPrintSuccess={handlePrintSuccess}
                     onClose={() => setSelectedLabelModal(null)}
                 />
             )}
