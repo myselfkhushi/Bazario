@@ -1,4 +1,4 @@
-import {BrowserRouter, Routes, Route} from "react-router-dom";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
 import MainLayout from "../component/layout/MainLayout.jsx";
 import Home from "../pages/Home";
 import Shop from "../pages/Shop";
@@ -8,7 +8,7 @@ import ProtectedRoute from "./ProtectedRoute.jsx";
 import ProductDetails from "../pages/ProductDetail.jsx";
 import Cart from "../pages/Buyer/Cart.jsx";
 import Checkout from "../pages/Checkout.jsx";
-import Orders from "../pages/Buyer/Orders.jsx"
+import Orders from "../pages/Buyer/Orders.jsx";
 import AdminDashbored from "../pages/Admin/AdminDashbored.jsx";
 import AdminRoute from "./AdminRoute.jsx";
 import SellerDashboared from "../pages/seller/SellerDashboared.jsx";
@@ -38,58 +38,61 @@ import BulkOrders from "../pages/support/BulkOrders.jsx";
 import LegalPage from "../pages/legal/LegalPage.jsx";
 import ScrollToTop from "../component/common/ScrollToTop.jsx";
 
-function AppRoutes(){
-    return (
-        <BrowserRouter>
-          <ScrollToTop />
-          <Routes>
-            <Route element={<MainLayout />} >
-            {/* Public routes — accessible without login */}
-            <Route path="/" element={<Home />} />
-            <Route path="/shop" element={<Shop />} />
-            <Route path="/product/:id" element={<ProductDetails />}/>
-            <Route path="/cart" element={<Cart/>}/>
-            <Route path="/wishlist" element={<Wishlist/>}/>
+function AppRoutes() {
+  return (
+    <BrowserRouter>
+      <ScrollToTop />
+      <Routes>
+        {/* Public & Customer Routes — Rendered inside MainLayout (Includes Customer Navbar & Footer) */}
+        <Route element={<MainLayout />}>
+          <Route path="/" element={<Home />} />
+          <Route path="/shop" element={<Shop />} />
+          <Route path="/product/:id" element={<ProductDetails />} />
+          <Route path="/cart" element={<Cart />} />
+          <Route path="/wishlist" element={<Wishlist />} />
 
-            {/* Company routes */}
-            <Route path="/about" element={<About />} />
-            <Route path="/careers" element={<Careers />} />
-            <Route path="/blog" element={<Blog />} />
-            <Route path="/press" element={<PressKit />} />
-            <Route path="/contact" element={<Contact />} />
+          {/* Company routes */}
+          <Route path="/about" element={<About />} />
+          <Route path="/careers" element={<Careers />} />
+          <Route path="/blog" element={<Blog />} />
+          <Route path="/press" element={<PressKit />} />
+          <Route path="/contact" element={<Contact />} />
 
-            {/* Support routes */}
-            <Route path="/help" element={<HelpCenter />} />
-            <Route path="/returns" element={<Returns />} />
-            <Route path="/track-order" element={<TrackOrder />} />
-            <Route path="/bulk-orders" element={<BulkOrders />} />
+          {/* Support routes */}
+          <Route path="/help" element={<HelpCenter />} />
+          <Route path="/returns" element={<Returns />} />
+          <Route path="/track-order" element={<TrackOrder />} />
+          <Route path="/bulk-orders" element={<BulkOrders />} />
 
-            {/* Legal routes */}
-            <Route path="/privacy" element={<LegalPage initialTab="privacy" />} />
-            <Route path="/terms" element={<LegalPage initialTab="terms" />} />
-            <Route path="/cookies" element={<LegalPage initialTab="cookies" />} />
-            <Route path="/refund" element={<LegalPage initialTab="refund" />} />
+          {/* Legal routes */}
+          <Route path="/privacy" element={<LegalPage initialTab="privacy" />} />
+          <Route path="/terms" element={<LegalPage initialTab="terms" />} />
+          <Route path="/cookies" element={<LegalPage initialTab="cookies" />} />
+          <Route path="/refund" element={<LegalPage initialTab="refund" />} />
 
-            {/* Protected routes — require login */}
-            <Route path="/checkout" element={<ProtectedRoute><Checkout/></ProtectedRoute>}/>
-            <Route path="/profile" element={<ProtectedRoute><Profile/></ProtectedRoute>}/>
-            <Route path="/orders" element={<ProtectedRoute><Orders/></ProtectedRoute>}/>
+          {/* Protected Customer routes */}
+          <Route path="/checkout" element={<ProtectedRoute><Checkout /></ProtectedRoute>} />
+          <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+          <Route path="/orders" element={<ProtectedRoute><Orders /></ProtectedRoute>} />
 
-            <Route element={<SellerRoute><SellerLayout/></SellerRoute>}>
-              <Route path="/seller/dashboard" element={<SellerDashboared/>}/>
-              <Route path="/seller/products" element={<MyProducts/>}/>
-              <Route path="/seller/orders" element={<SellerOrders/>}/>
-              <Route path="/seller/add-product" element={<AddProduct/>}/>
-              <Route path="/seller/edit-product/:id" element={<EditProduct />} />
-            </Route>
+          <Route path="/register" element={<Register />} />
+          <Route path="/login" element={<Login />} />
+        </Route>
 
-            <Route path="/admin" element={<AdminRoute><AdminDashbored/></AdminRoute>}/>
-            <Route path="/register" element={<Register />} />
-            <Route path="/login" element={<Login />} />
-            </Route>
-          </Routes>
-        </BrowserRouter>
-    );
+        {/* 🛑 SELLER PORTAL — OUTSIDE MainLayout (No customer Navbar/Categories/Cart/Wishlist) */}
+        <Route element={<SellerRoute><SellerLayout /></SellerRoute>}>
+          <Route path="/seller/dashboard" element={<SellerDashboared />} />
+          <Route path="/seller/products" element={<MyProducts />} />
+          <Route path="/seller/orders" element={<SellerOrders />} />
+          <Route path="/seller/add-product" element={<AddProduct />} />
+          <Route path="/seller/edit-product/:id" element={<EditProduct />} />
+        </Route>
+
+        {/* Admin Portal — Outside MainLayout */}
+        <Route path="/admin" element={<AdminRoute><AdminDashbored /></AdminRoute>} />
+      </Routes>
+    </BrowserRouter>
+  );
 }
 
 export default AppRoutes;

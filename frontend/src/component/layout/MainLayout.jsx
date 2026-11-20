@@ -7,7 +7,7 @@ function MainLayout() {
 
     return (
         <div className="min-h-screen flex flex-col bg-[#F8F7FF]">
-            <Navbar />
+            {/* <Navbar /> */}
             <div key={location.pathname} className="flex-1 animate-[fadeIn_0.4s_ease-out,fadeUp_0.4s_ease-out]">
                 <Outlet />
             </div>
