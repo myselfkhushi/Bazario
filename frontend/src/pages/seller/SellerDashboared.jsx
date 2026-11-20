@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import toast from "react-hot-toast";
 import {
@@ -16,7 +16,9 @@ import {
     Check,
     Store,
     Layers,
-    AlertCircle
+    AlertCircle,
+    RotateCcw,
+    FileText
 } from "lucide-react";
 
 import { getSellerOrders } from "../../features/seller/sellerSlice";
@@ -29,7 +31,52 @@ export default function SellerDashboared() {
 
     // Active Tab State (Default: 'new' orders)
     const [activeTab, setActiveTab] = useState("new");
-    const [updatingOrderId, setUpdatingOrderId] = useState(null);
+
+    // In-flight tracking: Prevents double-click / rapid clicking concurrency
+    const [inFlightOrders, setInFlightOrders] = useState(new Set());
+
+    // Local state for instant (0ms) optimistic transitions
+    const [localOrders, setLocalOrders] = useState([]);
+
+    // Keep localOrders synced with Redux orders while preserving optimistic updates
+    useEffect(() => {
+        setLocalOrders(orders);
+    }, [orders]);
+
+    // 🛑 DEDUPLICATION GUARANTEE: Ensure every order ID appears strictly ONCE
+    const uniqueOrders = useMemo(() => {
+        const sourceList = localOrders.length > 0 ? localOrders : orders;
+        const map = new Map();
+        for (const order of sourceList) {
+            if (order && order._id) {
+                map.set(order._id, order);
+            }
+        }
+        return Array.from(map.values());
+    }, [localOrders, orders]);
+
+    // Track which orders have had their labels printed
+    const [printedOrderIds, setPrintedOrderIds] = useState(() => {
+        try {
+            const saved = localStorage.getItem("seller_printed_orders");
+            return saved ? new Set(JSON.parse(saved)) : new Set();
+        } catch {
+            return new Set();
+        }
+    });
+
+    const markLabelAsPrinted = (orderId) => {
+        setPrintedOrderIds((prev) => {
+            const next = new Set(prev);
+            next.add(orderId);
+            try {
+                localStorage.setItem("seller_printed_orders", JSON.stringify([...next]));
+            } catch {
+                // Ignore storage error
+            }
+            return next;
+        });
+    };
 
     // Modals
     const [selectedLabelOrder, setSelectedLabelOrder] = useState(null);
@@ -43,16 +90,16 @@ export default function SellerDashboared() {
 
     // Live counts for all pipeline stages
     const counts = {
-        all: orders.length,
-        new: orders.filter((o) => ["pending", "confirmed"].includes(o.orderstatus?.toLowerCase())).length,
-        print_label: orders.filter((o) => o.orderstatus?.toLowerCase() === "processing").length,
-        handover: orders.filter((o) => o.orderstatus?.toLowerCase() === "rtd").length,
-        in_transit: orders.filter((o) => ["shipped", "out_for_delivery"].includes(o.orderstatus?.toLowerCase())).length,
-        delivered: orders.filter((o) => o.orderstatus?.toLowerCase() === "delivered").length,
+        all: uniqueOrders.length,
+        new: uniqueOrders.filter((o) => ["pending", "confirmed"].includes(o.orderstatus?.toLowerCase())).length,
+        print_label: uniqueOrders.filter((o) => o.orderstatus?.toLowerCase() === "processing").length,
+        handover: uniqueOrders.filter((o) => o.orderstatus?.toLowerCase() === "rtd").length,
+        in_transit: uniqueOrders.filter((o) => ["shipped", "out_for_delivery"].includes(o.orderstatus?.toLowerCase())).length,
+        delivered: uniqueOrders.filter((o) => o.orderstatus?.toLowerCase() === "delivered").length,
     };
 
     // Filter orders according to selected tab
-    const filteredOrders = orders.filter((o) => {
+    const filteredOrders = uniqueOrders.filter((o) => {
         const st = o.orderstatus?.toLowerCase();
         if (activeTab === "new") return ["pending", "confirmed"].includes(st);
         if (activeTab === "print_label") return st === "processing";
@@ -62,17 +109,38 @@ export default function SellerDashboared() {
         return true; // "all"
     });
 
-    // Quick Status Update (Accept order -> Processing, Print Label -> RTD)
+    // ⚡ CONCURRENCY & OPTIMISTIC STATUS UPDATE
     const handleQuickStatus = async (orderId, newStatus, successMsg) => {
+        // 1. Guard against double-tap / rapid clicks
+        if (inFlightOrders.has(orderId)) return;
+
+        // 2. Lock this orderId immediately
+        setInFlightOrders((prev) => new Set(prev).add(orderId));
+
+        // 3. 0ms Optimistic UI Update: Instantly change status so order disappears from current tab immediately!
+        setLocalOrders((prev) => {
+            const current = prev.length > 0 ? prev : orders;
+            return current.map((o) =>
+                o._id === orderId ? { ...o, orderstatus: newStatus } : o
+            );
+        });
+
+        // 4. Send API request to backend
         try {
-            setUpdatingOrderId(orderId);
             await updateSellerOrderStatus(orderId, { orderstatus: newStatus });
             toast.success(successMsg || `Order moved to ${newStatus.toUpperCase()}`);
             dispatch(getSellerOrders());
         } catch (err) {
+            // Revert on error
+            setLocalOrders(orders);
             toast.error(err.response?.data?.message || "Failed to update status");
         } finally {
-            setUpdatingOrderId(null);
+            // Unlock orderId
+            setInFlightOrders((prev) => {
+                const next = new Set(prev);
+                next.delete(orderId);
+                return next;
+            });
         }
     };
 
@@ -80,12 +148,25 @@ export default function SellerDashboared() {
     const handleDispatchSubmit = async (e) => {
         e.preventDefault();
         if (!dispatchModalOrder) return;
+        const orderId = dispatchModalOrder._id;
 
-        const tracking = awbNumber.trim() || `TRK-${dispatchModalOrder._id.slice(-8).toUpperCase()}`;
+        if (inFlightOrders.has(orderId)) return;
+
+        const tracking = awbNumber.trim() || `TRK-${orderId.slice(-8).toUpperCase()}`;
+
+        setInFlightOrders((prev) => new Set(prev).add(orderId));
+
+        // Optimistic update to 'shipped'
+        setLocalOrders((prev) =>
+            prev.map((o) =>
+                o._id === orderId
+                    ? { ...o, orderstatus: "shipped", courier: courierName, trackingNumber: tracking }
+                    : o
+            )
+        );
 
         try {
-            setUpdatingOrderId(dispatchModalOrder._id);
-            await updateSellerOrderStatus(dispatchModalOrder._id, {
+            await updateSellerOrderStatus(orderId, {
                 orderstatus: "shipped",
                 courier: courierName,
                 trackingNumber: tracking,
@@ -95,9 +176,14 @@ export default function SellerDashboared() {
             setAwbNumber("");
             dispatch(getSellerOrders());
         } catch (err) {
+            setLocalOrders(orders);
             toast.error(err.response?.data?.message || "Failed to dispatch order");
         } finally {
-            setUpdatingOrderId(null);
+            setInFlightOrders((prev) => {
+                const next = new Set(prev);
+                next.delete(orderId);
+                return next;
+            });
         }
     };
 
@@ -169,9 +255,9 @@ export default function SellerDashboared() {
                         <Store className="w-7 h-7 text-indigo-600" />
                         Seller Hub
                     </h1>
-                    {/* <p className="text-slate-500 text-xs sm:text-sm mt-1 font-medium">
+                    <p className="text-slate-500 text-xs sm:text-sm mt-1 font-medium">
                         Manage your end-to-end packing, label printing, and courier handovers in real time.
-                    </p> */}
+                    </p>
                 </div>
 
                 <button
@@ -181,8 +267,6 @@ export default function SellerDashboared() {
                     <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin text-indigo-600" : ""}`} />
                     Refresh Pipeline
                 </button>
-
-                
             </div>
 
             {/* Fulfillment Pipeline Tabs */}
@@ -243,8 +327,9 @@ export default function SellerDashboared() {
             ) : (
                 <div className="space-y-4">
                     {filteredOrders.map((order) => {
-                        const isUpdating = updatingOrderId === order._id;
+                        const isOrderInFlight = inFlightOrders.has(order._id);
                         const st = order.orderstatus?.toLowerCase();
+                        const isLabelPrinted = printedOrderIds.has(order._id);
 
                         return (
                             <div
@@ -296,7 +381,7 @@ export default function SellerDashboared() {
                                         </div>
                                     </div>
 
-                                    {/* Total Payable & Payment Badge */}
+                                    {/* Total Payable */}
                                     <div className="text-right">
                                         <p className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Order Value</p>
                                         <p className="text-lg font-black text-slate-900">
@@ -307,7 +392,7 @@ export default function SellerDashboared() {
 
                                 {/* Center: Product Items & Delivery Address */}
                                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 my-4">
-                                    {/* Products Column (Span 2) */}
+                                    {/* Products Column */}
                                     <div className="lg:col-span-2 space-y-3">
                                         {order.orderitem?.map((item, idx) => (
                                             <div
@@ -365,74 +450,134 @@ export default function SellerDashboared() {
                                     </div>
                                 </div>
 
-                                {/* Bottom Action Buttons: Dynamically based on current stage */}
+                                {/* Bottom Action Buttons */}
                                 <div className="pt-3 border-t border-slate-100 flex flex-wrap items-center justify-between gap-3">
-                                    <div className="flex items-center gap-2">
-                                        <button
-                                            onClick={() => setSelectedLabelOrder(order)}
-                                            className="px-3.5 py-2 rounded-xl text-xs font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 transition flex items-center gap-1.5 cursor-pointer"
-                                        >
-                                            <Printer className="w-3.5 h-3.5 text-slate-600" />
-                                            Print Label & Invoice
-                                        </button>
+                                    {/* Left Status Indicators */}
+                                    <div>
+                                        {st === "processing" && (
+                                            isLabelPrinted ? (
+                                                <span className="text-xs font-bold text-emerald-700 bg-emerald-50 px-3 py-1.5 rounded-xl border border-emerald-200 flex items-center gap-1.5">
+                                                    <Check className="w-3.5 h-3.5 text-emerald-600" />
+                                                    Shipping Label Printed
+                                                </span>
+                                            ) : (
+                                                <span className="text-xs font-bold text-amber-700 bg-amber-50 px-3 py-1.5 rounded-xl border border-amber-200 flex items-center gap-1.5">
+                                                    <AlertCircle className="w-3.5 h-3.5 text-amber-600" />
+                                                    Label Print Required
+                                                </span>
+                                            )
+                                        )}
+
+                                        {/* For already shipped or delivered orders, can print invoice anytime */}
+                                        {st !== "processing" && st !== "pending" && st !== "confirmed" && (
+                                            <button
+                                                onClick={() => setSelectedLabelOrder(order)}
+                                                className="px-3 py-1.5 rounded-xl text-xs font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 transition flex items-center gap-1.5 cursor-pointer"
+                                            >
+                                                <FileText className="w-3.5 h-3.5" />
+                                                View Label / Invoice
+                                            </button>
+                                        )}
                                     </div>
 
-                                    {/* Stage 1: New Orders -> Accept & Pack */}
-                                    {["pending", "confirmed"].includes(st) && (
-                                        <button
-                                            disabled={isUpdating}
-                                            onClick={() => handleQuickStatus(order._id, "processing", "Order accepted! Moved to Print Label.")}
-                                            className="px-5 py-2.5 rounded-xl text-xs font-bold bg-amber-500 hover:bg-amber-600 text-white shadow-xs transition flex items-center gap-2 cursor-pointer disabled:opacity-50"
-                                        >
-                                            <Check className="w-4 h-4" />
-                                            {isUpdating ? "Moving..." : "Accept & Move to Pack"}
-                                        </button>
-                                    )}
-
-                                    {/* Stage 2: Processing -> Mark Ready for Courier Pickup (RTD) */}
-                                    {st === "processing" && (
-                                        <div className="flex items-center gap-2">
+                                    {/* Right Action Buttons */}
+                                    <div className="flex items-center gap-2">
+                                        {/* ── STAGE 1: NEW ORDERS ────────────────────────── */}
+                                        {["pending", "confirmed"].includes(st) && (
                                             <button
-                                                disabled={isUpdating}
-                                                onClick={() => handleQuickStatus(order._id, "rtd", "Packed! Order moved to Handover to Courier.")}
-                                                className="px-5 py-2.5 rounded-xl text-xs font-bold bg-indigo-600 hover:bg-indigo-700 text-white shadow-xs transition flex items-center gap-2 cursor-pointer disabled:opacity-50"
+                                                disabled={isOrderInFlight}
+                                                onClick={() =>
+                                                    handleQuickStatus(
+                                                        order._id,
+                                                        "processing",
+                                                        "Order accepted! Moved to Print Labels."
+                                                    )
+                                                }
+                                                className="px-5 py-2.5 rounded-xl text-xs font-bold bg-amber-500 hover:bg-amber-600 text-white shadow-xs transition flex items-center gap-2 cursor-pointer disabled:opacity-50"
                                             >
-                                                <CheckCircle2 className="w-4 h-4" />
-                                                {isUpdating ? "Packing..." : "Mark Packed & Ready for Pickup"}
+                                                <Check className="w-4 h-4" />
+                                                {isOrderInFlight ? "Processing..." : "Accept & Move to Pack"}
                                             </button>
-                                        </div>
-                                    )}
+                                        )}
 
-                                    {/* Stage 3: RTD -> Handover to Courier */}
-                                    {st === "rtd" && (
-                                        <button
-                                            disabled={isUpdating}
-                                            onClick={() => {
-                                                setDispatchModalOrder(order);
-                                                setAwbNumber(`TRK-${order._id.slice(-8).toUpperCase()}`);
-                                            }}
-                                            className="px-5 py-2.5 rounded-xl text-xs font-bold bg-purple-600 hover:bg-purple-700 text-white shadow-xs transition flex items-center gap-2 cursor-pointer disabled:opacity-50"
-                                        >
-                                            <Truck className="w-4 h-4" />
-                                            Handover to Courier Partner
-                                        </button>
-                                    )}
+                                        {/* ── STAGE 2: PRINT LABELS TAB ─────────────────── */}
+                                        {st === "processing" && (
+                                            <>
+                                                {/* STEP 1: Before Label is Printed: ONLY Show 'Print Shipping Label' */}
+                                                {!isLabelPrinted ? (
+                                                    <button
+                                                        onClick={() => {
+                                                            setSelectedLabelOrder(order);
+                                                            markLabelAsPrinted(order._id);
+                                                            toast.success("Opening label... Print it now to unlock dispatch!");
+                                                        }}
+                                                        className="px-5 py-2.5 rounded-xl text-xs font-bold bg-indigo-600 hover:bg-indigo-700 text-white shadow-xs transition flex items-center gap-2 cursor-pointer"
+                                                    >
+                                                        <Printer className="w-4 h-4" />
+                                                        Print Shipping Label & Invoice
+                                                    </button>
+                                                ) : (
+                                                    /* STEP 2: After Label is Printed: NOW Show 'Mark Packed & Ready for Pickup' */
+                                                    <div className="flex items-center gap-2">
+                                                        <button
+                                                            onClick={() => setSelectedLabelOrder(order)}
+                                                            className="px-3.5 py-2 rounded-xl text-xs font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 transition flex items-center gap-1.5 cursor-pointer"
+                                                            title="Re-print shipping label"
+                                                        >
+                                                            <RotateCcw className="w-3.5 h-3.5" />
+                                                            Re-print
+                                                        </button>
 
-                                    {/* Stage 4: In Transit */}
-                                    {(st === "shipped" || st === "out_for_delivery") && (
-                                        <div className="flex items-center gap-2 text-xs font-bold text-blue-700 bg-blue-50 px-3.5 py-2 rounded-xl border border-blue-200">
-                                            <Send className="w-3.5 h-3.5" />
-                                            In Transit ({order.courier || "Courier"})
-                                        </div>
-                                    )}
+                                                        <button
+                                                            disabled={isOrderInFlight}
+                                                            onClick={() =>
+                                                                handleQuickStatus(
+                                                                    order._id,
+                                                                    "rtd",
+                                                                    "Packed! Order moved to Handover to Courier."
+                                                                )
+                                                            }
+                                                            className="px-5 py-2.5 rounded-xl text-xs font-bold bg-purple-600 hover:bg-purple-700 text-white shadow-xs transition flex items-center gap-2 cursor-pointer disabled:opacity-50 animate-[fadeIn_0.2s_ease-out]"
+                                                        >
+                                                            <CheckCircle2 className="w-4 h-4" />
+                                                            {isOrderInFlight ? "Moving..." : "Product Packed & Ready for Pickup"}
+                                                        </button>
+                                                    </div>
+                                                )}
+                                            </>
+                                        )}
 
-                                    {/* Stage 5: Delivered */}
-                                    {st === "delivered" && (
-                                        <div className="flex items-center gap-2 text-xs font-bold text-emerald-700 bg-emerald-50 px-3.5 py-2 rounded-xl border border-emerald-200">
-                                            <CheckCircle2 className="w-3.5 h-3.5" />
-                                            Delivered to Customer
-                                        </div>
-                                    )}
+                                        {/* ── STAGE 3: HANDOVER TO COURIER (RTD) ────────── */}
+                                        {st === "rtd" && (
+                                            <button
+                                                disabled={isOrderInFlight}
+                                                onClick={() => {
+                                                    setDispatchModalOrder(order);
+                                                    setAwbNumber(`TRK-${order._id.slice(-8).toUpperCase()}`);
+                                                }}
+                                                className="px-5 py-2.5 rounded-xl text-xs font-bold bg-purple-600 hover:bg-purple-700 text-white shadow-xs transition flex items-center gap-2 cursor-pointer disabled:opacity-50"
+                                            >
+                                                <Truck className="w-4 h-4" />
+                                                Handover to Courier Partner
+                                            </button>
+                                        )}
+
+                                        {/* ── STAGE 4: IN TRANSIT ────────────────────────── */}
+                                        {(st === "shipped" || st === "out_for_delivery") && (
+                                            <div className="flex items-center gap-2 text-xs font-bold text-blue-700 bg-blue-50 px-3.5 py-2 rounded-xl border border-blue-200">
+                                                <Send className="w-3.5 h-3.5" />
+                                                In Transit ({order.courier || "Courier"})
+                                            </div>
+                                        )}
+
+                                        {/* ── STAGE 5: DELIVERED ─────────────────────────── */}
+                                        {st === "delivered" && (
+                                            <div className="flex items-center gap-2 text-xs font-bold text-emerald-700 bg-emerald-50 px-3.5 py-2 rounded-xl border border-emerald-200">
+                                                <CheckCircle2 className="w-3.5 h-3.5" />
+                                                Delivered to Customer
+                                            </div>
+                                        )}
+                                    </div>
                                 </div>
                             </div>
                         );
@@ -510,7 +655,7 @@ export default function SellerDashboared() {
                                 </button>
                                 <button
                                     type="submit"
-                                    disabled={updatingOrderId === dispatchModalOrder._id}
+                                    disabled={inFlightOrders.has(dispatchModalOrder._id)}
                                     className="px-5 py-2.5 rounded-xl text-xs font-bold bg-purple-600 hover:bg-purple-700 text-white shadow-xs cursor-pointer flex items-center gap-1.5 disabled:opacity-50"
                                 >
                                     <Send className="w-3.5 h-3.5" />
