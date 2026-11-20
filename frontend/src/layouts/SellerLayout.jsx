@@ -55,7 +55,7 @@ export default function SellerLayout() {
         { path: "/seller/dashboard", label: "Dashboard", icon: LayoutDashboard },
         { path: "/seller/add-product", label: "Add Product", icon: PlusCircle },
         { path: "/seller/products", label: "My Products", icon: Package },
-        // { path: "/seller/orders", label: "Orders", icon: ShoppingBag },
+        
     ];
 
     const userInitial = user?.name ? user.name.charAt(0).toUpperCase() : "S";

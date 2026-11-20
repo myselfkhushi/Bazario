@@ -197,6 +197,7 @@ export const getallproducts = asynchandler(async (req, res) => {
         totalProducts,
         totalPages,
         currentPage: page,
+        product: products,
         products,
     });
 });

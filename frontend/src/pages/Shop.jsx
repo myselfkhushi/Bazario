@@ -172,10 +172,11 @@ function Shop() {
                 };
                 
                 const response = await getAllProducts(filters);
-                setProducts(response.product || []);
-                 setTotalPages(response.totalPages || 1);
+                const fetchedList = response.products || response.product || [];
+                setProducts(fetchedList);
+                setTotalPages(response.totalPages || 1);
                 setCurrentPage(response.currentPage || 1);
-                setTotalProducts(response.totalProducts || response.count || 0);
+                setTotalProducts(response.totalProducts ?? response.count ?? fetchedList.length);
 
                 
             } catch (error) {

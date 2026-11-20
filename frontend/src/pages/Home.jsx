@@ -82,7 +82,8 @@ function Home() {
         const fetchFeatured = async () => {
             try {
                 const response = await getAllProducts({ sort: "newest" });
-                setFeaturedProducts((response.product || []).slice(0, 4));
+                const fetchedList = response.products || response.product || [];
+                setFeaturedProducts(fetchedList.slice(0, 4));
             } catch (error) {
                 console.error("Failed to fetch featured products:", error);
             } finally {
