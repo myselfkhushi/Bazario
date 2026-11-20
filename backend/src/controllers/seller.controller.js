@@ -100,7 +100,9 @@ export const updateSellerOrderStatus = asynchandler(async (req, res) => {
         "processing",
         "rtd",
         "shipped",
-        "cancelled"
+        "cancelled",
+        "returned",
+        "rto"
     ];
 
     if (!allowedSellerStatuses.includes(orderstatus)) {

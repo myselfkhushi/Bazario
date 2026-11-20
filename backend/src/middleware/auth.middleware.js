@@ -41,16 +41,52 @@ export const isAuthenticate = async(req,res,next)=>{
     }
 }
 
-export const authorizeRole =(...roles)=>{
-    return (req,res,next)=>{
-        console.log("authorirole hit");
-            if(!roles.includes(req.user.role)){
-                return res.status(403).json({
-                    success:false,
-                    message:"Acess denied"
-                })
-            }
-            next();
-            
+export const authorizeRole = (...roles) => {
+    return (req, res, next) => {
+        if (!roles.includes(req.user.role)) {
+            return res.status(403).json({
+                success: false,
+                message: "Access denied"
+            });
+        }
+
+        // 🛑 Strict Verification Gate: Block unverified sellers from seller operations
+        if (req.user.role === "seller" && !req.user?.sellerDetails?.isSellerVerified) {
+            return res.status(403).json({
+                success: false,
+                message: "Seller verification incomplete. Please complete all onboarding verification steps before accessing seller operations."
+            });
+        }
+
+        next();
+    };
+};
+
+export const isVerifiedSeller = (req, res, next) => {
+    if (!req.user) {
+        return res.status(401).json({
+            success: false,
+            message: "Unauthorized"
+        });
     }
-}
+
+    if (req.user.role === "admin") {
+        return next();
+    }
+
+    if (req.user.role !== "seller") {
+        return res.status(403).json({
+            success: false,
+            message: "Access denied. Seller account required."
+        });
+    }
+
+    if (!req.user.sellerDetails?.isSellerVerified) {
+        return res.status(403).json({
+            success: false,
+            message: "Seller verification incomplete. Please complete all onboarding verification steps before accessing seller operations."
+        });
+    }
+
+    next();
+};

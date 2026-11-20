@@ -19,6 +19,51 @@ const userSchema =  new mongoose.Schema({
        enum: ["buyer", "seller", "admin"],
        default: "buyer",
     },
+    phone: {
+        type: String,
+        trim: true,
+        default: ""
+    },
+    isPhoneVerified: {
+        type: Boolean,
+        default: false
+    },
+    isEmailVerified: {
+        type: Boolean,
+        default: false
+    },
+    sellerDetails: {
+        isSellerVerified: {
+            type: Boolean,
+            default: false
+        },
+        storeName: {
+            type: String,
+            trim: true,
+            default: ""
+        },
+        storeDescription: {
+            type: String,
+            trim: true,
+            default: ""
+        },
+        gstin: {
+            type: String,
+            trim: true,
+            default: ""
+        },
+        panNumber: {
+            type: String,
+            trim: true,
+            default: ""
+        },
+        pickupAddress: {
+            street: { type: String, default: "" },
+            city: { type: String, default: "" },
+            state: { type: String, default: "" },
+            pincode: { type: String, default: "" }
+        }
+    },
     password:{
         type:String,
         required:true,

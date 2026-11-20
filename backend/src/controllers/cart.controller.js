@@ -456,3 +456,9 @@ export const clearCart = asynchandler(async (req, res) => {
         message: "Cart cleared successfully",
     });
 });
+
+// Backward-compatible named exports
+export const addtocart = addToCart;
+export const getmycart = getMyCart;
+export const updatecart = updateCartItemQuantity;
+export const removecartitem = removeCartItem;

@@ -33,7 +33,9 @@ app.use(cors({
             allowedOrigins.some(o => o.replace(/\/$/, "") === cleanOrigin) || 
             cleanOrigin.endsWith(".vercel.app") ||
             cleanOrigin.includes("localhost") ||
-            cleanOrigin.includes("127.0.0.1");
+            cleanOrigin.includes("127.0.0.1") ||
+            cleanOrigin.includes("192.168.") ||
+            cleanOrigin.includes("10.");
 
         if (isAllowed) {
             return callback(null, true);

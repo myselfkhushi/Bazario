@@ -12,7 +12,7 @@ router.get("/brands", getproductbrands);
 router.get("/search/all",getproductwithsearch);
 router.get("/page/all",getproductwithpagination);
 router.get("/category/:category",getproductwithcategory);
-router.get("/my/product",isAuthenticate,getmyproduct);
+router.get("/my/product",isAuthenticate,authorizeRole("seller"),getmyproduct);
 router.get("/total/count",getproductcount);
 router.get("/:id", getsingleproduct);
 router.put("/:id", isAuthenticate, authorizeRole("admin", "seller"), upload.array("images", 5), updateproduct);

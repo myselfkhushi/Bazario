@@ -17,7 +17,7 @@ const getCookieOptions = () => {
 
 
 export const registerUser = asynchandler(async (req, res) => {
-    const { name, email, password } = req.body;
+    const { name, email, password, role } = req.body;
 
     // Strict validation
     if (!name?.trim() || !email?.trim() || !password || password.length < 6) {
@@ -25,6 +25,7 @@ export const registerUser = asynchandler(async (req, res) => {
     }
 
     const normalizedEmail = email.trim().toLowerCase();
+    const assignedRole = role === "seller" ? "seller" : "buyer";
 
     const existingUser = await User.findOne({ email: normalizedEmail });
     if (existingUser) {
@@ -35,6 +36,8 @@ export const registerUser = asynchandler(async (req, res) => {
         name: name.trim(),
         email: normalizedEmail,
         password,
+        role: assignedRole,
+        sellerDetails: assignedRole === "seller" ? { isSellerVerified: false } : undefined
     });
 
     const token = generateToken(user._id);
@@ -46,7 +49,10 @@ export const registerUser = asynchandler(async (req, res) => {
     res.cookie("token", token, getCookieOptions());
     res.status(201).json({
         success: true,
-        message: "User successfully registered",
+        message: assignedRole === "seller" 
+            ? "Seller account created! Please complete verification." 
+            : "User successfully registered",
+        token,
         user: userResponse,
     });
 });
@@ -81,6 +87,7 @@ export const loginUser = asynchandler(async (req, res) => {
     res.status(200).json({
         success: true,
         message: "User logged in successfully",
+        token,
         user,
     });
 });
@@ -153,5 +160,72 @@ export const updateProfile = asynchandler(async (req, res) => {
         success: true,
         message: "Profile updated successfully",
         user,
+    });
+});
+
+// 🏪 Complete Seller Verification & Onboarding
+export const completeSellerOnboarding = asynchandler(async (req, res) => {
+    const userId = req.user._id;
+    const { phone, gstin, storeName, storeDescription, pickupAddress } = req.body;
+
+    // Resilient Phone Validation (strips country codes and non-digits)
+    const cleanPhone = phone ? phone.toString().replace(/\D/g, "").slice(-10) : "";
+    if (!cleanPhone || cleanPhone.length !== 10) {
+        throw new ApiError("Valid 10-digit mobile number is required", 400);
+    }
+
+    // Resilient GSTIN Validation
+    const cleanGstin = gstin ? gstin.trim().toUpperCase() : "";
+    const gstRegex = /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/;
+    if (!cleanGstin || !gstRegex.test(cleanGstin)) {
+        throw new ApiError("Valid 15-character Indian GSTIN is required (e.g. 08BDRPC2330N1ZD)", 400);
+    }
+
+    if (!storeName || storeName.trim().length < 2) {
+        throw new ApiError("Store name is required (minimum 2 characters)", 400);
+    }
+
+    if (!pickupAddress || !pickupAddress.street?.trim() || !pickupAddress.city?.trim() || !pickupAddress.state?.trim() || !pickupAddress.pincode?.trim()) {
+        throw new ApiError("Complete warehouse pickup location (street, city, state, pincode) is required", 400);
+    }
+
+    const panNumber = cleanGstin.slice(2, 12).toUpperCase();
+
+    const updatedUser = await User.findByIdAndUpdate(
+        userId,
+        {
+            role: "seller",
+            phone: cleanPhone,
+            isPhoneVerified: true,
+            isEmailVerified: true,
+            sellerDetails: {
+                isSellerVerified: true,
+                storeName: storeName.trim(),
+                storeDescription: storeDescription ? storeDescription.trim() : "",
+                gstin: cleanGstin,
+                panNumber,
+                pickupAddress: {
+                    street: pickupAddress.street.trim(),
+                    city: pickupAddress.city.trim(),
+                    state: pickupAddress.state.trim(),
+                    pincode: pickupAddress.pincode.trim(),
+                }
+            }
+        },
+        { new: true }
+    );
+
+    if (!updatedUser) {
+        throw new ApiError("User not found", 404);
+    }
+
+    const token = generateToken(updatedUser._id);
+    res.cookie("token", token, getCookieOptions());
+
+    res.status(200).json({
+        success: true,
+        message: "Seller verification and onboarding completed successfully! Welcome to Seller Hub.",
+        token,
+        user: updatedUser
     });
 });
