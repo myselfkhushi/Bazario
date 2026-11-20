@@ -1,8 +1,18 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { Printer, X, Eye } from "lucide-react";
 
-export default function ShippingLabelModal({ order, onClose, canPrint = true }) {
+export default function ShippingLabelModal({ order, onClose, canPrint = true, autoPrint = false }) {
   if (!order) return null;
+
+  // 🛑 AUTO-PRINT: Directly triggers the browser printer window when opened!
+  useEffect(() => {
+    if (canPrint && autoPrint) {
+      const timer = setTimeout(() => {
+        window.print();
+      }, 350); // 350ms ensures barcode and styles are fully rendered before print dialog opens
+      return () => clearTimeout(timer);
+    }
+  }, [canPrint, autoPrint]);
 
   const handlePrint = () => {
     if (!canPrint) return;
@@ -127,20 +137,22 @@ export default function ShippingLabelModal({ order, onClose, canPrint = true }) 
               <div className="p-3 text-[11px] leading-snug">
                 <p className="font-bold text-slate-700">Shipping/Customer address:</p>
                 <p className="font-black text-slate-950 text-xs mt-0.5">
-                  Name: {order.shippingAddress?.fullName},
+                  Name: {order.shippingAddress?.fullName || order.user?.name || "Customer"},
                 </p>
                 <p className="text-slate-800 mt-0.5">
-                  {order.shippingAddress?.street},
+                  {order.shippingAddress?.street || "Address not provided"},
                 </p>
                 <p className="text-slate-800">
-                  {order.shippingAddress?.city}, {order.shippingAddress?.state},
+                  {order.shippingAddress?.city || ""}, {order.shippingAddress?.state || ""},
                 </p>
                 <p className="font-black text-slate-950 text-xs mt-1">
-                  {order.shippingAddress?.city} - <span className="text-sm font-black underline">{order.shippingAddress?.pincode}</span>, IN
+                  {order.shippingAddress?.city || ""} - <span className="text-sm font-black underline">{order.shippingAddress?.pincode || ""}</span>, IN
                 </p>
-                <p className="text-slate-700 mt-1 font-bold">
-                  Ph: +91 {order.shippingAddress?.phone}
-                </p>
+                {order.shippingAddress?.phone && (
+                  <p className="text-slate-700 mt-1 font-bold">
+                    Ph: +91 {order.shippingAddress?.phone}
+                  </p>
+                )}
               </div>
 
             </div>
@@ -156,7 +168,7 @@ export default function ShippingLabelModal({ order, onClose, canPrint = true }) 
             </p>
           </div>
 
-          {/* Items SKU Table */}
+          {/* Items SKU Table (Robust Snapshotted Fallback) */}
           <div className="border-b border-slate-900">
             <table className="w-full text-[10px] text-left">
               <thead>
@@ -169,7 +181,7 @@ export default function ShippingLabelModal({ order, onClose, canPrint = true }) 
                 {order.orderitem?.map((item, i) => (
                   <tr key={i} className="border-b border-slate-300 last:border-none">
                     <td className="p-1 border-r border-slate-900 font-medium max-w-[280px] truncate">
-                      SKU-{item.product?._id?.slice(-5) || "001"} | {item.title}
+                      SKU-{item.product?._id?.slice(-5) || item.product?.toString?.().slice(-5) || "001"} | {item.title || item.product?.title || "Item"}
                     </td>
                     <td className="p-1 text-center font-bold">{item.quantity}</td>
                   </tr>

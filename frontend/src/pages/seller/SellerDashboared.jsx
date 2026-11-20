@@ -17,7 +17,8 @@ import {
     Store,
     Layers,
     AlertCircle,
-    Eye
+    Eye,
+    Archive
 } from "lucide-react";
 
 import { getSellerOrders } from "../../features/seller/sellerSlice";
@@ -54,7 +55,7 @@ export default function SellerDashboared() {
         return Array.from(map.values());
     }, [localOrders, orders]);
 
-    // Track which orders have had their labels printed (Once printed in Print Labels, print button is consumed!)
+    // Track which orders have had their labels printed
     const [printedOrderIds, setPrintedOrderIds] = useState(() => {
         try {
             const saved = localStorage.getItem("seller_printed_orders");
@@ -78,7 +79,7 @@ export default function SellerDashboared() {
     };
 
     // Modals
-    const [selectedLabelModal, setSelectedLabelModal] = useState(null); // { order, canPrint: boolean }
+    const [selectedLabelModal, setSelectedLabelModal] = useState(null); // { order, canPrint: boolean, autoPrint: boolean }
     const [dispatchModalOrder, setDispatchModalOrder] = useState(null);
     const [courierName, setCourierName] = useState("Delhivery Surface");
     const [awbNumber, setAwbNumber] = useState("");
@@ -149,6 +150,13 @@ export default function SellerDashboared() {
         }
     };
 
+    // Direct Print Action: Automatically triggers browser print window!
+    const handleDirectPrint = (order) => {
+        markLabelAsPrinted(order._id);
+        setSelectedLabelModal({ order, canPrint: true, autoPrint: true });
+        toast.success("Printing shipping label... Print dialog opened!");
+    };
+
     // Handover to Courier Submit
     const handleDispatchSubmit = async (e) => {
         e.preventDefault();
@@ -190,6 +198,18 @@ export default function SellerDashboared() {
                 return next;
             });
         }
+    };
+
+    // 🛡️ Robust Historical Image Extractor (Works even if product is deleted/unlisted)
+    const resolveItemImage = (item) => {
+        if (!item) return "/placeholder.png";
+        if (typeof item.image === "string" && item.image) return item.image;
+        if (item.image?.url) return item.image.url;
+        if (item.product?.images?.[0]) {
+            const pImg = item.product.images[0];
+            return typeof pImg === "string" ? pImg : pImg.url || "/placeholder.png";
+        }
+        return "/placeholder.png";
     };
 
     const tabs = [
@@ -245,7 +265,7 @@ export default function SellerDashboared() {
             icon: Layers,
             badgeBg: "bg-slate-800 text-white",
             activeColor: "border-slate-800 text-slate-900 bg-slate-50",
-            desc: "Shipped & Delivered orders only"
+            desc: "Shipped & Delivered orders history"
         },
     ];
 
@@ -395,36 +415,52 @@ export default function SellerDashboared() {
                                     </div>
                                 </div>
 
-                                {/* Center: Product Items & Delivery Address */}
+                                {/* Center: Product Items & Delivery Address (Historical Snapshotted Data) */}
                                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 my-4">
                                     {/* Products Column */}
                                     <div className="lg:col-span-2 space-y-3">
-                                        {order.orderitem?.map((item, idx) => (
-                                            <div
-                                                key={idx}
-                                                className="flex items-center gap-3.5 p-3 rounded-2xl bg-slate-50/70 border border-slate-100"
-                                            >
-                                                <img
-                                                    src={item.image || item.product?.images?.[0] || "/placeholder.png"}
-                                                    alt={item.title}
-                                                    className="w-14 h-14 rounded-xl object-cover bg-white border border-slate-200/60 shrink-0"
-                                                />
-                                                <div className="min-w-0 flex-1">
-                                                    <p className="text-xs font-bold text-slate-900 truncate">
-                                                        {item.title || item.product?.title || "Product Item"}
-                                                    </p>
-                                                    <p className="text-[11px] text-slate-500 font-medium mt-0.5">
-                                                        Qty: <span className="font-bold text-slate-800">{item.quantity}</span> • Rate: <span className="font-bold text-slate-800">₹{item.price?.toLocaleString("en-IN")}</span>
-                                                    </p>
+                                        {order.orderitem?.map((item, idx) => {
+                                            const itemImg = resolveItemImage(item);
+                                            const itemTitle = item.title || item.product?.title || "Purchased Product Item";
+                                            const itemPrice = item.price || 0;
+                                            const itemQty = item.quantity || 1;
+                                            const isUnlisted = !item.product || item.product.isListed === false || item.product.isDeleted;
+
+                                            return (
+                                                <div
+                                                    key={idx}
+                                                    className="flex items-center gap-3.5 p-3 rounded-2xl bg-slate-50/70 border border-slate-100"
+                                                >
+                                                    <img
+                                                        src={itemImg}
+                                                        alt={itemTitle}
+                                                        className="w-14 h-14 rounded-xl object-cover bg-white border border-slate-200/60 shrink-0"
+                                                    />
+                                                    <div className="min-w-0 flex-1">
+                                                        <div className="flex items-center gap-2">
+                                                            <p className="text-xs font-bold text-slate-900 truncate">
+                                                                {itemTitle}
+                                                            </p>
+                                                            {isUnlisted && (
+                                                                <span className="shrink-0 px-1.5 py-0.5 rounded text-[9px] font-bold bg-slate-200 text-slate-600 flex items-center gap-1">
+                                                                    <Archive className="w-2.5 h-2.5" />
+                                                                    Archived Listing
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                        <p className="text-[11px] text-slate-500 font-medium mt-0.5">
+                                                            Qty: <span className="font-bold text-slate-800">{itemQty}</span> • Rate: <span className="font-bold text-slate-800">₹{itemPrice.toLocaleString("en-IN")}</span>
+                                                        </p>
+                                                    </div>
+                                                    <div className="text-right font-black text-xs text-slate-900 pr-2">
+                                                        ₹{(itemPrice * itemQty).toLocaleString("en-IN")}
+                                                    </div>
                                                 </div>
-                                                <div className="text-right font-black text-xs text-slate-900 pr-2">
-                                                    ₹{((item.price || 0) * (item.quantity || 1)).toLocaleString("en-IN")}
-                                                </div>
-                                            </div>
-                                        ))}
+                                            );
+                                        })}
                                     </div>
 
-                                    {/* Delivery Address Column */}
+                                    {/* Delivery Address Column (Full Permanent Record) */}
                                     <div className="p-3.5 rounded-2xl bg-slate-50/70 border border-slate-100 flex flex-col justify-between text-xs">
                                         <div>
                                             <p className="font-bold text-slate-700 flex items-center gap-1.5 mb-1.5">
@@ -434,12 +470,12 @@ export default function SellerDashboared() {
                                             <p className="text-slate-800 font-bold">
                                                 {order.shippingAddress?.fullName || order.user?.name || "Recipient"}
                                             </p>
-                                            <p className="text-slate-500 mt-0.5 line-clamp-2">
-                                                {order.shippingAddress?.street || ""}, {order.shippingAddress?.city || ""}, {order.shippingAddress?.state || ""} - {order.shippingAddress?.pincode || ""}
+                                            <p className="text-slate-500 mt-0.5 leading-relaxed">
+                                                {order.shippingAddress?.street || "Address not provided"}, {order.shippingAddress?.city || ""}, {order.shippingAddress?.state || ""} - {order.shippingAddress?.pincode || ""}
                                             </p>
                                             {order.shippingAddress?.phone && (
-                                                <p className="text-slate-500 mt-1 font-semibold">
-                                                    Ph: {order.shippingAddress?.phone}
+                                                <p className="text-slate-600 mt-1.5 font-bold">
+                                                    Ph: +91 {order.shippingAddress?.phone}
                                                 </p>
                                             )}
                                         </div>
@@ -457,7 +493,7 @@ export default function SellerDashboared() {
 
                                 {/* Bottom Action Buttons */}
                                 <div className="pt-3 border-t border-slate-100 flex flex-wrap items-center justify-between gap-3">
-                                    {/* Left: Status Badge or View-Only Button for other sections */}
+                                    {/* Left: Status Badge or View-Only Button */}
                                     <div>
                                         {st === "processing" ? (
                                             isLabelPrinted ? (
@@ -472,10 +508,10 @@ export default function SellerDashboared() {
                                                 </span>
                                             )
                                         ) : (
-                                            /* 🛑 RULE 3: In all other sections, seller can ONLY VIEW the label/invoice (cannot print!) */
+                                            /* 🛑 In other sections: View-only label & invoice */
                                             st !== "pending" && st !== "confirmed" && (
                                                 <button
-                                                    onClick={() => setSelectedLabelModal({ order, canPrint: false })}
+                                                    onClick={() => setSelectedLabelModal({ order, canPrint: false, autoPrint: false })}
                                                     className="px-3.5 py-1.5 rounded-xl text-xs font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 transition flex items-center gap-1.5 cursor-pointer"
                                                 >
                                                     <Eye className="w-3.5 h-3.5 text-slate-500" />
@@ -487,7 +523,7 @@ export default function SellerDashboared() {
 
                                     {/* Right Action Buttons */}
                                     <div className="flex items-center gap-2">
-                                        {/* ── STAGE 1: NEW ORDERS (No printing allowed, only accept) ── */}
+                                        {/* ── STAGE 1: NEW ORDERS ────────────────────────── */}
                                         {["pending", "confirmed"].includes(st) && (
                                             <button
                                                 disabled={isOrderInFlight}
@@ -505,24 +541,20 @@ export default function SellerDashboared() {
                                             </button>
                                         )}
 
-                                        {/* ── STAGE 2: PRINT LABELS TAB (Print ONCE -> Then only Mark Packed) ── */}
+                                        {/* ── STAGE 2: PRINT LABELS TAB ─────────────────── */}
                                         {st === "processing" && (
                                             <>
-                                                {/* STEP 1: Before Print -> Show 'Print Shipping Label' */}
+                                                {/* STEP 1: Before Print -> Pressing directly triggers printer dialog! */}
                                                 {!isLabelPrinted ? (
                                                     <button
-                                                        onClick={() => {
-                                                            setSelectedLabelModal({ order, canPrint: true });
-                                                            markLabelAsPrinted(order._id);
-                                                            toast.success("Printing label! Now mark as packed to move forward.");
-                                                        }}
+                                                        onClick={() => handleDirectPrint(order)}
                                                         className="px-5 py-2.5 rounded-xl text-xs font-bold bg-indigo-600 hover:bg-indigo-700 text-white shadow-xs transition flex items-center gap-2 cursor-pointer"
                                                     >
                                                         <Printer className="w-4 h-4" />
-                                                        Print Shipping Label & Invoice
+                                                        Print Shipping Label
                                                     </button>
                                                 ) : (
-                                                    /* 🛑 STEP 2: After Print -> ONLY 'Mark Packed & Ready for Pickup' (No re-print button!) */
+                                                    /* STEP 2: After Print -> ONLY 'Mark Packed & Ready for Pickup' */
                                                     <button
                                                         disabled={isOrderInFlight}
                                                         onClick={() =>
@@ -579,11 +611,12 @@ export default function SellerDashboared() {
                 </div>
             )}
 
-            {/* Shipping Label Modal (Print enabled in Print Labels tab, View-Only in all other tabs) */}
+            {/* Shipping Label Modal */}
             {selectedLabelModal && (
                 <ShippingLabelModal
                     order={selectedLabelModal.order}
                     canPrint={selectedLabelModal.canPrint}
+                    autoPrint={selectedLabelModal.autoPrint}
                     onClose={() => setSelectedLabelModal(null)}
                 />
             )}
