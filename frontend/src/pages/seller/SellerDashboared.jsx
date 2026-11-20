@@ -18,7 +18,13 @@ import {
     Layers,
     AlertCircle,
     Eye,
-    Archive
+    Archive,
+    RotateCcw,
+    IndianRupee,
+    TrendingUp,
+    Wallet,
+    Clock,
+    ShieldCheck
 } from "lucide-react";
 
 import { getSellerOrders } from "../../features/seller/sellerSlice";
@@ -88,8 +94,39 @@ export default function SellerDashboared() {
         dispatch(getSellerOrders());
     }, [dispatch]);
 
-    // Helper: Checks if order is Shipped or Delivered
+    // Helpers: Status classification
     const isShippedOrDelivered = (st) => ["shipped", "out_for_delivery", "delivered"].includes(st?.toLowerCase());
+    const isReturnOrder = (st) => ["returned", "return_requested", "rto", "cancelled"].includes(st?.toLowerCase());
+
+    // 💰 Comprehensive Revenue Metrics
+    const revenueMetrics = useMemo(() => {
+        let realizedRevenue = 0; // Delivered (Settled)
+        let pendingPayout = 0;   // In Pipeline (Shipped, Out for delivery, RTD, Processing, Confirmed)
+        let returnedValue = 0;   // Cancelled / Returned (Refunded)
+
+        for (const o of uniqueOrders) {
+            const st = o.orderstatus?.toLowerCase();
+            const amt = Number(o.totalamount) || 0;
+
+            if (st === "delivered") {
+                realizedRevenue += amt;
+            } else if (isReturnOrder(st)) {
+                returnedValue += amt;
+            } else {
+                pendingPayout += amt;
+            }
+        }
+
+        const totalGrossRevenue = realizedRevenue + pendingPayout;
+
+        return {
+            realizedRevenue,
+            pendingPayout,
+            returnedValue,
+            totalGrossRevenue,
+            totalOrders: uniqueOrders.length,
+        };
+    }, [uniqueOrders]);
 
     // Live counts for all pipeline stages
     const counts = {
@@ -100,6 +137,7 @@ export default function SellerDashboared() {
         delivered: uniqueOrders.filter((o) => o.orderstatus?.toLowerCase() === "delivered").length,
         // 🛑 RULE: 'All Orders' only counts shipped or delivered orders!
         all: uniqueOrders.filter((o) => isShippedOrDelivered(o.orderstatus)).length,
+        returns: uniqueOrders.filter((o) => isReturnOrder(o.orderstatus)).length,
     };
 
     // Filter orders according to selected tab
@@ -112,6 +150,7 @@ export default function SellerDashboared() {
         if (activeTab === "delivered") return st === "delivered";
         // 🛑 RULE: In 'All Orders' tab, show ONLY shipped or delivered orders!
         if (activeTab === "all") return isShippedOrDelivered(st);
+        if (activeTab === "returns") return isReturnOrder(st);
         return true;
     });
 
@@ -273,6 +312,24 @@ export default function SellerDashboared() {
             activeColor: "border-slate-800 text-slate-900 bg-slate-50",
             desc: "Shipped & Delivered orders history"
         },
+        {
+            id: "returns",
+            label: "Returns & RTO",
+            count: counts.returns,
+            icon: RotateCcw,
+            badgeBg: counts.returns > 0 ? "bg-rose-600 text-white" : "bg-slate-200 text-slate-600",
+            activeColor: "border-rose-600 text-rose-600 bg-rose-50/50",
+            desc: "Customer returns, cancelled shipments, and undelivered RTO parcels"
+        },
+        {
+            id: "revenue",
+            label: "Revenue & Payouts",
+            count: `₹${revenueMetrics.realizedRevenue >= 100000 ? (revenueMetrics.realizedRevenue / 100000).toFixed(1) + 'L' : revenueMetrics.realizedRevenue.toLocaleString('en-IN')}`,
+            icon: IndianRupee,
+            badgeBg: "bg-emerald-700 text-white",
+            activeColor: "border-emerald-600 text-emerald-700 bg-emerald-50/50",
+            desc: "Settled store revenue, in-pipeline earnings, and order economics"
+        },
     ];
 
     const currentTabInfo = tabs.find((t) => t.id === activeTab) || tabs[0];
@@ -337,22 +394,197 @@ export default function SellerDashboared() {
                 <div className="flex items-center gap-2">
                     <span className="w-2 h-2 rounded-full bg-indigo-600"></span>
                     <h2 className="text-sm font-black text-slate-800 uppercase tracking-wider">
-                        {currentTabInfo.label} ({filteredOrders.length})
+                        {currentTabInfo.label} {activeTab === "revenue" ? `(₹${revenueMetrics.realizedRevenue.toLocaleString("en-IN")})` : `(${filteredOrders.length})`}
                     </h2>
                     <span className="text-xs text-slate-400 font-medium hidden sm:inline">— {currentTabInfo.desc}</span>
                 </div>
             </div>
 
-            {/* Orders Feed */}
-            {filteredOrders.length === 0 ? (
+            {/* ── VIEW 1: SELLER REVENUE & FINANCIAL DASHBOARD ── */}
+            {activeTab === "revenue" ? (
+                <div className="space-y-6">
+                    {/* Top 4 Financial Metric Cards */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                        {/* 1. Realized Revenue */}
+                        <div className="bg-white rounded-3xl border border-slate-200/80 p-5 shadow-xs">
+                            <div className="flex items-center justify-between mb-3">
+                                <span className="p-2.5 rounded-2xl bg-emerald-50 text-emerald-600">
+                                    <Wallet className="w-5 h-5" />
+                                </span>
+                                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase bg-emerald-100 text-emerald-800">
+                                    Cleared Payout
+                                </span>
+                            </div>
+                            <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Realized Revenue</p>
+                            <p className="text-2xl font-black text-slate-900 mt-1">
+                                ₹{revenueMetrics.realizedRevenue.toLocaleString("en-IN")}
+                            </p>
+                            <p className="text-[11px] text-slate-500 font-medium mt-1">
+                                Earned from successfully delivered orders
+                            </p>
+                        </div>
+
+                        {/* 2. Pending Settlement */}
+                        <div className="bg-white rounded-3xl border border-slate-200/80 p-5 shadow-xs">
+                            <div className="flex items-center justify-between mb-3">
+                                <span className="p-2.5 rounded-2xl bg-blue-50 text-blue-600">
+                                    <Clock className="w-5 h-5" />
+                                </span>
+                                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase bg-blue-100 text-blue-800">
+                                    In Pipeline
+                                </span>
+                            </div>
+                            <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Pending Settlement</p>
+                            <p className="text-2xl font-black text-slate-900 mt-1">
+                                ₹{revenueMetrics.pendingPayout.toLocaleString("en-IN")}
+                            </p>
+                            <p className="text-[11px] text-slate-500 font-medium mt-1">
+                                Settles automatically upon customer delivery
+                            </p>
+                        </div>
+
+                        {/* 3. Total Gross Sales */}
+                        <div className="bg-white rounded-3xl border border-slate-200/80 p-5 shadow-xs">
+                            <div className="flex items-center justify-between mb-3">
+                                <span className="p-2.5 rounded-2xl bg-indigo-50 text-indigo-600">
+                                    <TrendingUp className="w-5 h-5" />
+                                </span>
+                                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase bg-indigo-100 text-indigo-800">
+                                    {uniqueOrders.length} Orders
+                                </span>
+                            </div>
+                            <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Total Gross Sales</p>
+                            <p className="text-2xl font-black text-slate-900 mt-1">
+                                ₹{revenueMetrics.totalGrossRevenue.toLocaleString("en-IN")}
+                            </p>
+                            <p className="text-[11px] text-slate-500 font-medium mt-1">
+                                Cumulative sales across all order cycles
+                            </p>
+                        </div>
+
+                        {/* 4. Returns & Deductions */}
+                        <div className="bg-white rounded-3xl border border-slate-200/80 p-5 shadow-xs">
+                            <div className="flex items-center justify-between mb-3">
+                                <span className="p-2.5 rounded-2xl bg-rose-50 text-rose-600">
+                                    <RotateCcw className="w-5 h-5" />
+                                </span>
+                                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase bg-rose-100 text-rose-800">
+                                    {counts.returns} Returns
+                                </span>
+                            </div>
+                            <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Returns / Deductions</p>
+                            <p className="text-2xl font-black text-slate-900 mt-1">
+                                ₹{revenueMetrics.returnedValue.toLocaleString("en-IN")}
+                            </p>
+                            <p className="text-[11px] text-slate-500 font-medium mt-1">
+                                Value of cancelled or returned orders
+                            </p>
+                        </div>
+                    </div>
+
+                    {/* Financial Order Ledger Table */}
+                    <div className="bg-white rounded-3xl border border-slate-200/80 shadow-xs overflow-hidden">
+                        <div className="p-5 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                            <div>
+                                <h3 className="text-base font-black text-slate-900">Order Payout & Settlement Ledger</h3>
+                                <p className="text-xs text-slate-400 font-medium mt-0.5">
+                                    Track gross revenue, platform fee (0% for Bazario sellers), and settlement status per order.
+                                </p>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <span className="px-3 py-1 rounded-xl bg-emerald-50 text-emerald-700 text-xs font-bold border border-emerald-200 flex items-center gap-1.5">
+                                    <ShieldCheck className="w-3.5 h-3.5" /> 0% Platform Commission
+                                </span>
+                            </div>
+                        </div>
+
+                        <div className="overflow-x-auto">
+                            <table className="w-full text-left text-xs">
+                                <thead>
+                                    <tr className="bg-slate-50/70 border-b border-slate-100 text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                                        <th className="py-3.5 px-4">Order ID & Date</th>
+                                        <th className="py-3.5 px-4">Customer</th>
+                                        <th className="py-3.5 px-4">Items</th>
+                                        <th className="py-3.5 px-4 text-right">Gross Amount</th>
+                                        <th className="py-3.5 px-4 text-right">Fee (0%)</th>
+                                        <th className="py-3.5 px-4 text-right font-black text-slate-900">Net Payout</th>
+                                        <th className="py-3.5 px-4 text-center">Settlement Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-slate-100 font-medium">
+                                    {uniqueOrders.map((order) => {
+                                        const st = order.orderstatus?.toLowerCase();
+                                        const amt = order.totalamount || 0;
+                                        const isDelivered = st === "delivered";
+                                        const isReturn = isReturnOrder(st);
+
+                                        return (
+                                            <tr key={order._id} className="hover:bg-slate-50/50 transition">
+                                                <td className="py-3.5 px-4">
+                                                    <p className="font-bold text-slate-900">#{order._id.slice(-8).toUpperCase()}</p>
+                                                    <p className="text-[11px] text-slate-400 mt-0.5">
+                                                        {new Date(order.createdAt).toLocaleDateString("en-IN", {
+                                                            day: "numeric",
+                                                            month: "short",
+                                                            year: "numeric"
+                                                        })}
+                                                    </p>
+                                                </td>
+                                                <td className="py-3.5 px-4">
+                                                    <p className="font-bold text-slate-800">{order.shippingAddress?.fullName || order.user?.name || "Customer"}</p>
+                                                    <p className="text-[11px] text-slate-400">{order.shippingAddress?.city || "India"}</p>
+                                                </td>
+                                                <td className="py-3.5 px-4 max-w-[200px] truncate text-slate-600">
+                                                    {order.orderitem?.map((item) => `${item.quantity || 1}x ${item.title || "Item"}`).join(", ") || "Order Item"}
+                                                </td>
+                                                <td className="py-3.5 px-4 text-right font-bold text-slate-800">
+                                                    ₹{amt.toLocaleString("en-IN")}
+                                                </td>
+                                                <td className="py-3.5 px-4 text-right text-emerald-600 font-bold">
+                                                    ₹0
+                                                </td>
+                                                <td className="py-3.5 px-4 text-right font-black text-slate-900">
+                                                    ₹{amt.toLocaleString("en-IN")}
+                                                </td>
+                                                <td className="py-3.5 px-4 text-center">
+                                                    {isDelivered ? (
+                                                        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-black uppercase bg-emerald-50 text-emerald-700 border border-emerald-200">
+                                                            <CheckCircle2 className="w-3 h-3 text-emerald-600" /> Settled
+                                                        </span>
+                                                    ) : isReturn ? (
+                                                        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-black uppercase bg-rose-50 text-rose-700 border border-rose-200">
+                                                            <RotateCcw className="w-3 h-3 text-rose-600" /> Refunded
+                                                        </span>
+                                                    ) : (
+                                                        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-black uppercase bg-blue-50 text-blue-700 border border-blue-200">
+                                                            <Clock className="w-3 h-3 text-blue-600" /> Pending Delivery
+                                                        </span>
+                                                    )}
+                                                </td>
+                                            </tr>
+                                        );
+                                    })}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            ) : filteredOrders.length === 0 ? (
                 <div className="bg-white rounded-3xl border border-slate-200/80 p-16 text-center shadow-xs">
                     <div className="w-16 h-16 rounded-3xl bg-slate-50 border border-slate-100 flex items-center justify-center mx-auto mb-4 text-slate-400">
-                        <Package className="w-8 h-8" />
+                        {activeTab === "returns" ? (
+                            <RotateCcw className="w-8 h-8 text-rose-500" />
+                        ) : (
+                            <Package className="w-8 h-8" />
+                        )}
                     </div>
-                    <h3 className="text-base font-black text-slate-800">No Orders in this Section</h3>
+                    <h3 className="text-base font-black text-slate-800">
+                        {activeTab === "returns" ? "0 Customer Returns or RTOs" : "No Orders in this Section"}
+                    </h3>
                     <p className="text-xs text-slate-400 mt-1 max-w-sm mx-auto font-medium">
-                        There are currently no orders in <span className="font-bold text-slate-600">{currentTabInfo.label}</span>. 
-                        Orders matching this stage will show up here automatically.
+                        {activeTab === "returns"
+                            ? "Excellent quality score! None of your customer shipments have been returned or cancelled."
+                            : `There are currently no orders in ${currentTabInfo.label}. Orders matching this stage will show up here automatically.`}
                     </p>
                 </div>
             ) : (
@@ -379,7 +611,9 @@ export default function SellerDashboared() {
                                                     Order #{order._id.slice(-10).toUpperCase()}
                                                 </h3>
                                                 <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider border ${
-                                                    st === "delivered"
+                                                    isReturnOrder(st)
+                                                        ? "bg-rose-50 text-rose-700 border-rose-200"
+                                                        : st === "delivered"
                                                         ? "bg-emerald-50 text-emerald-700 border-emerald-200"
                                                         : st === "shipped" || st === "out_for_delivery"
                                                         ? "bg-blue-50 text-blue-700 border-blue-200"
@@ -501,7 +735,12 @@ export default function SellerDashboared() {
                                 <div className="pt-3 border-t border-slate-100 flex flex-wrap items-center justify-between gap-3">
                                     {/* Left: Status Badge or View-Only Button */}
                                     <div>
-                                        {st === "processing" ? (
+                                        {isReturnOrder(st) ? (
+                                            <span className="text-xs font-bold text-rose-700 bg-rose-50 px-3 py-1.5 rounded-xl border border-rose-200 flex items-center gap-1.5">
+                                                <RotateCcw className="w-3.5 h-3.5 text-rose-600" />
+                                                Return / Cancelled — Refund Settled
+                                            </span>
+                                        ) : st === "processing" ? (
                                             isLabelPrinted ? (
                                                 <span className="text-xs font-bold text-emerald-700 bg-emerald-50 px-3 py-1.5 rounded-xl border border-emerald-200 flex items-center gap-1.5">
                                                     <Check className="w-3.5 h-3.5 text-emerald-600" />
@@ -607,6 +846,14 @@ export default function SellerDashboared() {
                                             <div className="flex items-center gap-2 text-xs font-bold text-emerald-700 bg-emerald-50 px-3.5 py-2 rounded-xl border border-emerald-200">
                                                 <CheckCircle2 className="w-3.5 h-3.5" />
                                                 Delivered to Customer
+                                            </div>
+                                        )}
+
+                                        {/* ── STAGE 6: RETURNS / CANCELLED ───────────────── */}
+                                        {isReturnOrder(st) && (
+                                            <div className="flex items-center gap-2 text-xs font-bold text-rose-700 bg-rose-50 px-3.5 py-2 rounded-xl border border-rose-200">
+                                                <RotateCcw className="w-3.5 h-3.5" />
+                                                Refund Settled
                                             </div>
                                         )}
                                     </div>
