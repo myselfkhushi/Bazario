@@ -16,11 +16,12 @@ import {
   Building2,
   Sparkles,
   KeyRound,
-  Truck
+  Truck,
+  LogOut
 } from "lucide-react";
 
-import { completeSellerOnboardingAPI } from "../../features/auth/authAPI";
-import { setUser } from "../../features/auth/authSlice";
+import { completeSellerOnboardingAPI, logoutUser } from "../../features/auth/authAPI";
+import { setUser, logout } from "../../features/auth/authSlice";
 
 export default function SellerOnboarding() {
   const navigate = useNavigate();
@@ -95,6 +96,19 @@ export default function SellerOnboarding() {
     toast.success("GSTIN active & verified on GST Portal!");
   };
 
+  // 🚪 Handle Sign Out
+  const handleSignOut = async () => {
+    try {
+      await logoutUser();
+    } catch (e) {
+      // ignore
+    }
+    localStorage.removeItem("token");
+    dispatch(logout());
+    toast.success("Signed out successfully");
+    navigate("/login");
+  };
+
   // 🚀 Final Form Submission
   const handleCompleteRegistration = async (e) => {
     e.preventDefault();
@@ -117,7 +131,7 @@ export default function SellerOnboarding() {
       return;
     }
 
-    if (!pickupAddress.street || !pickupAddress.city || !pickupAddress.pincode) {
+    if (!pickupAddress.street?.trim() || !pickupAddress.city?.trim() || !pickupAddress.pincode?.trim()) {
       toast.error("Complete warehouse pickup location is required in Step 4");
       setCurrentStep(4);
       return;
@@ -126,12 +140,21 @@ export default function SellerOnboarding() {
     try {
       setSubmitting(true);
       const res = await completeSellerOnboardingAPI({
-        phone,
-        gstin,
-        storeName,
-        storeDescription,
-        pickupAddress,
+        phone: phone.trim(),
+        gstin: gstin.trim().toUpperCase(),
+        storeName: storeName.trim(),
+        storeDescription: storeDescription ? storeDescription.trim() : "",
+        pickupAddress: {
+          street: pickupAddress.street.trim(),
+          city: pickupAddress.city.trim(),
+          state: pickupAddress.state ? pickupAddress.state.trim() : "Rajasthan",
+          pincode: pickupAddress.pincode.trim(),
+        },
       });
+
+      if (res.token) {
+        localStorage.setItem("token", res.token);
+      }
 
       if (res.user) {
         dispatch(setUser(res.user));
@@ -155,8 +178,45 @@ export default function SellerOnboarding() {
   ];
 
   return (
-    <div className="min-h-screen bg-slate-50 py-10 px-4 sm:px-6 lg:px-8 font-sans">
-      <div className="max-w-4xl mx-auto">
+    <div className="min-h-screen bg-slate-50 font-sans flex flex-col">
+      {/* 🛑 Dedicated Distraction-Free Seller Header */}
+      <header className="bg-white border-b border-slate-200/80 sticky top-0 z-40">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <span className="text-2xl font-black tracking-tight text-slate-900 font-sans">
+              BAZARIO<span className="text-purple-600">.</span>
+            </span>
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-black uppercase tracking-wider bg-purple-50 text-purple-700 border border-purple-200/70">
+              <Sparkles className="w-3.5 h-3.5 text-purple-600" />
+              Seller Onboarding
+            </span>
+          </div>
+
+          <div className="flex items-center gap-4">
+            <div className="hidden sm:flex items-center gap-2">
+              <div className="w-8 h-8 rounded-full bg-purple-600 text-white flex items-center justify-center font-black text-xs uppercase shadow-xs">
+                {user?.name ? user.name.charAt(0).toUpperCase() : "S"}
+              </div>
+              <div className="text-left">
+                <p className="text-xs font-bold text-slate-900 leading-none truncate max-w-[120px]">{user?.name || "Seller"}</p>
+                <p className="text-[10px] text-slate-400 font-medium truncate max-w-[120px] mt-0.5">{user?.email}</p>
+              </div>
+            </div>
+
+            <button
+              onClick={handleSignOut}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold text-slate-600 hover:text-rose-600 hover:bg-rose-50 border border-slate-200 transition cursor-pointer"
+            >
+              <LogOut className="w-3.5 h-3.5" />
+              <span>Sign Out</span>
+            </button>
+          </div>
+        </div>
+      </header>
+
+      {/* Main Form Content */}
+      <main className="flex-1 py-10 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-4xl mx-auto">
         
         {/* Top Header */}
         <div className="text-center mb-8">
@@ -620,6 +680,7 @@ export default function SellerOnboarding() {
 
         </div>
       </div>
-    </div>
-  );
+    </main>
+  </div>
+);
 }

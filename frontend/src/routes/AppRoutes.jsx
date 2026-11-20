@@ -88,8 +88,10 @@ function AppRoutes() {
 
           <Route path="/register" element={<Register />} />
           <Route path="/login" element={<Login />} />
-          <Route path="/seller/onboarding" element={<ProtectedRoute><SellerOnboarding /></ProtectedRoute>} />
         </Route>
+
+        {/* 🚀 Standalone Seller Onboarding Wizard (Dedicated, Distraction-Free - No Buyer Navbar) */}
+        <Route path="/seller/onboarding" element={<ProtectedRoute><SellerOnboarding /></ProtectedRoute>} />
 
         {/* 🛑 SELLER PORTAL — OUTSIDE MainLayout (Dedicated Seller Hub Top Navbar & Pages) */}
         <Route element={<SellerRoute><SellerLayout /></SellerRoute>}>
