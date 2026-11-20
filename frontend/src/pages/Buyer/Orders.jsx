@@ -1,49 +1,223 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import { FaBoxOpen, FaArrowRight } from "react-icons/fa";
 import {
-    FaBoxOpen,
-    FaArrowRight,
-} from "react-icons/fa";
-import { MapPin, Package, Truck, CheckCircle2, Clock, AlertCircle } from "lucide-react";
+    MapPin,
+    Package,
+    Truck,
+    CheckCircle2,
+    Clock,
+    AlertCircle,
+    XCircle,
+    RotateCcw,
+    X,
+    CreditCard,
+    ShieldAlert,
+    RefreshCw,
+} from "lucide-react";
 import { useDispatch, useSelector } from "react-redux";
+import toast from "react-hot-toast";
 
-import { getMyOrders } from "../../features/order/orderAPI";
+import {
+    getMyOrders,
+    cancelOrderAPI,
+    returnOrderAPI,
+} from "../../features/order/orderAPI";
 import {
     setLoading,
     setOrders,
     setError,
 } from "../../features/order/orderSlice";
 
+const CANCELLATION_REASONS = [
+    "Ordered by mistake / accidental order",
+    "Found a cheaper price elsewhere",
+    "Delivery timeline is longer than expected",
+    "Need to change shipping address or items",
+    "Payment / billing method change needed",
+    "Other reasons",
+];
+
+const RETURN_REASONS = [
+    "Defective, broken, or damaged item",
+    "Product does not match website photos or description",
+    "Size, fit, or color issue",
+    "Received wrong or incomplete item",
+    "Quality not satisfactory",
+    "Other reasons",
+];
+
 function Orders() {
     const dispatch = useDispatch();
 
-    const { orders, loading, error } = useSelector(
-        (state) => state.order
-    );
-
+    const { orders, loading, error } = useSelector((state) => state.order);
     const safeOrders = Array.isArray(orders) ? orders : [];
 
-    useEffect(() => {
-        const fetchOrders = async () => {
-            try {
-                dispatch(setLoading(true));
-                const response = await getMyOrders();
-                // Ensure compatibility with both 'orders' and 'order' keys
-                const orderData = response?.orders || response?.order || [];
-                dispatch(setOrders(Array.isArray(orderData) ? orderData : []));
-            } catch (err) {
-                console.error("Fetch orders failed:", err);
-                dispatch(
-                    setError(
-                        err.response?.data?.message ||
-                            "Failed to load your orders"
-                    )
-                );
-            }
-        };
+    // Modal States
+    const [cancelModalOrder, setCancelModalOrder] = useState(null);
+    const [cancelReason, setCancelReason] = useState(CANCELLATION_REASONS[0]);
+    const [actionLoading, setActionLoading] = useState(false);
 
+    const [returnModalOrder, setReturnModalOrder] = useState(null);
+    const [returnReason, setReturnReason] = useState(RETURN_REASONS[0]);
+    const [returnComments, setReturnComments] = useState("");
+
+    const fetchOrders = async () => {
+        try {
+            dispatch(setLoading(true));
+            const response = await getMyOrders();
+            const orderData = response?.orders || response?.order || [];
+            dispatch(setOrders(Array.isArray(orderData) ? orderData : []));
+        } catch (err) {
+            console.error("Fetch orders failed:", err);
+            dispatch(
+                setError(
+                    err.response?.data?.message || "Failed to load your orders"
+                )
+            );
+        }
+    };
+
+    useEffect(() => {
         fetchOrders();
     }, [dispatch]);
+
+    // Check if order is eligible for cancellation (before shipped)
+    const isCancellable = (status) => {
+        const s = (status || "").toLowerCase();
+        return ["pending", "confirmed", "processing", "rtd"].includes(s);
+    };
+
+    // Check if order is eligible for return (after delivery)
+    const isReturnable = (status) => {
+        const s = (status || "").toLowerCase();
+        return s === "delivered";
+    };
+
+    // Get formatted status badge
+    const getStatusBadge = (status) => {
+        const s = (status || "").toLowerCase();
+        if (s === "cancelled") {
+            return {
+                label: "Cancelled",
+                className: "bg-red-50 text-red-700 border-red-200",
+            };
+        }
+        if (s === "return_requested") {
+            return {
+                label: "Return Requested",
+                className: "bg-amber-50 text-amber-800 border-amber-200",
+            };
+        }
+        if (s === "returned") {
+            return {
+                label: "Returned",
+                className: "bg-purple-50 text-purple-700 border-purple-200",
+            };
+        }
+        if (s === "delivered") {
+            return {
+                label: "Delivered",
+                className: "bg-emerald-50 text-emerald-700 border-emerald-200",
+            };
+        }
+        if (["shipped", "out_for_delivery"].includes(s)) {
+            return {
+                label: s === "out_for_delivery" ? "Out for Delivery" : "Shipped",
+                className: "bg-blue-50 text-blue-700 border-blue-200",
+            };
+        }
+        return {
+            label: s.charAt(0).toUpperCase() + s.slice(1) || "Confirmed",
+            className: "bg-purple-50 text-purple-700 border-purple-200",
+        };
+    };
+
+    // Handle Order Cancellation
+    const handleConfirmCancel = async () => {
+        if (!cancelModalOrder) return;
+        try {
+            setActionLoading(true);
+            const res = await cancelOrderAPI(cancelModalOrder._id, {
+                reason: cancelReason,
+            });
+
+            toast.success(
+                res.message || "Order cancelled successfully! Refund initiated if prepaid."
+            );
+
+            // Update in local redux state
+            const updated = safeOrders.map((o) =>
+                o._id === cancelModalOrder._id
+                    ? {
+                          ...o,
+                          orderstatus: "cancelled",
+                          statusHistory: [
+                              ...(o.statusHistory || []),
+                              {
+                                  status: "cancelled",
+                                  timestamp: new Date(),
+                                  message: `Cancelled by user. ${res.refundMessage || ""}`,
+                              },
+                          ],
+                      }
+                    : o
+            );
+            dispatch(setOrders(updated));
+            setCancelModalOrder(null);
+        } catch (err) {
+            console.error(err);
+            toast.error(
+                err.response?.data?.message || "Failed to cancel order"
+            );
+        } finally {
+            setActionLoading(false);
+        }
+    };
+
+    // Handle Order Return Request
+    const handleConfirmReturn = async () => {
+        if (!returnModalOrder) return;
+        try {
+            setActionLoading(true);
+            const res = await returnOrderAPI(returnModalOrder._id, {
+                reason: returnReason,
+                comments: returnComments,
+            });
+
+            toast.success(
+                res.message || "Return requested! Reverse courier pickup scheduled."
+            );
+
+            // Update in local redux state
+            const updated = safeOrders.map((o) =>
+                o._id === returnModalOrder._id
+                    ? {
+                          ...o,
+                          orderstatus: "return_requested",
+                          statusHistory: [
+                              ...(o.statusHistory || []),
+                              {
+                                  status: "return_requested",
+                                  timestamp: new Date(),
+                                  message: `Return requested: ${returnReason}`,
+                              },
+                          ],
+                      }
+                    : o
+            );
+            dispatch(setOrders(updated));
+            setReturnModalOrder(null);
+            setReturnComments("");
+        } catch (err) {
+            console.error(err);
+            toast.error(
+                err.response?.data?.message || "Failed to submit return request"
+            );
+        } finally {
+            setActionLoading(false);
+        }
+    };
 
     if (loading) {
         return (
@@ -68,7 +242,7 @@ function Orders() {
                     <h2 className="text-xl font-bold text-slate-900 mb-2">Could not load orders</h2>
                     <p className="text-sm font-medium text-slate-500 mb-6">{error}</p>
                     <button
-                        onClick={() => window.location.reload()}
+                        onClick={fetchOrders}
                         className="px-6 py-3 bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold uppercase tracking-widest rounded-xl transition-all shadow-md shadow-purple-200 cursor-pointer"
                     >
                         Try Again
@@ -96,7 +270,7 @@ function Orders() {
                                 Order History
                             </h1>
                             <p className="text-slate-500 mt-1 text-sm font-medium">
-                                Track, manage, and review your purchases and doorstep deliveries.
+                                Track orders, manage doorstep deliveries, process returns or cancel anytime before shipping.
                             </p>
                         </div>
                         <div className="text-left sm:text-right border-l-2 border-purple-100 sm:border-slate-200 pl-6">
@@ -138,6 +312,11 @@ function Orders() {
                         {safeOrders.map((order) => {
                             const orderItems = Array.isArray(order.orderitem) ? order.orderitem : [];
                             const orderIdDisplay = String(order._id || "").slice(-8).toUpperCase();
+                            const statusBadge = getStatusBadge(order.orderstatus);
+                            const cancellable = isCancellable(order.orderstatus);
+                            const returnable = isReturnable(order.orderstatus);
+                            const isCancelled = (order.orderstatus || "").toLowerCase() === "cancelled";
+                            const isReturnRequested = (order.orderstatus || "").toLowerCase() === "return_requested";
 
                             return (
                                 <div
@@ -167,10 +346,44 @@ function Orders() {
                                                 </div>
                                             </div>
 
-                                            <div className="flex items-center gap-3">
-                                                <span className="inline-flex items-center px-3 py-1 rounded-full border border-purple-200 bg-purple-50 text-[10px] font-bold uppercase tracking-wider text-purple-700">
-                                                    {order.orderstatus || "Confirmed"}
+                                            <div className="flex items-center gap-2.5 flex-wrap">
+                                                {/* Status Pill */}
+                                                <span
+                                                    className={`inline-flex items-center px-3 py-1 rounded-full border text-[10px] font-bold uppercase tracking-wider ${statusBadge.className}`}
+                                                >
+                                                    {statusBadge.label}
                                                 </span>
+
+                                                {/* CANCEL ORDER BUTTON (If not yet shipped) */}
+                                                {cancellable && (
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => {
+                                                            setCancelModalOrder(order);
+                                                            setCancelReason(CANCELLATION_REASONS[0]);
+                                                        }}
+                                                        className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 text-[11px] font-bold rounded-xl transition-all shadow-xs cursor-pointer"
+                                                    >
+                                                        <XCircle className="w-3.5 h-3.5" />
+                                                        <span>Cancel Order</span>
+                                                    </button>
+                                                )}
+
+                                                {/* RETURN ORDER BUTTON (If delivered) */}
+                                                {returnable && (
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => {
+                                                            setReturnModalOrder(order);
+                                                            setReturnReason(RETURN_REASONS[0]);
+                                                            setReturnComments("");
+                                                        }}
+                                                        className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 text-[11px] font-bold rounded-xl transition-all shadow-xs cursor-pointer"
+                                                    >
+                                                        <RotateCcw className="w-3.5 h-3.5" />
+                                                        <span>Return Product</span>
+                                                    </button>
+                                                )}
 
                                                 {/* Track Order Live Button */}
                                                 <Link
@@ -183,6 +396,29 @@ function Orders() {
                                             </div>
                                         </div>
                                     </div>
+
+                                    {/* STATUS NOTICES */}
+                                    {isCancelled && (
+                                        <div className="bg-rose-50/70 border-b border-rose-100 px-6 py-3 flex items-center gap-2.5 text-xs text-rose-800">
+                                            <XCircle className="w-4 h-4 text-rose-600 shrink-0" />
+                                            <div>
+                                                <span className="font-bold">Order Cancelled:</span>{" "}
+                                                If you paid online, your refund of ₹
+                                                {Number(order.totalamount || 0).toLocaleString("en-IN")}{" "}
+                                                has been automatically initiated to your original bank/UPI account (takes 5–7 business days).
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {isReturnRequested && (
+                                        <div className="bg-amber-50/70 border-b border-amber-100 px-6 py-3 flex items-center gap-2.5 text-xs text-amber-900">
+                                            <RotateCcw className="w-4 h-4 text-amber-700 shrink-0" />
+                                            <div>
+                                                <span className="font-bold">Return Request Under Process:</span>{" "}
+                                                Our reverse courier logistics will contact you to schedule doorstep pickup. Refund will be credited upon pickup verification.
+                                            </div>
+                                        </div>
+                                    )}
 
                                     {/* PRODUCTS */}
                                     <div className="p-6">
@@ -310,6 +546,208 @@ function Orders() {
                     </div>
                 )}
             </main>
+
+            {/* ======================================================== */}
+            {/* CANCEL ORDER MODAL                                      */}
+            {/* ======================================================== */}
+            {cancelModalOrder && (
+                <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+                    <div className="bg-white w-full max-w-md rounded-3xl shadow-2xl border border-slate-100 overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+                        {/* Header */}
+                        <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/80">
+                            <div className="flex items-center gap-2.5 text-rose-600">
+                                <XCircle className="w-5 h-5" />
+                                <h3 className="font-extrabold text-slate-900 text-base">
+                                    Cancel Order #{String(cancelModalOrder._id).slice(-8).toUpperCase()}
+                                </h3>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={() => setCancelModalOrder(null)}
+                                className="w-8 h-8 rounded-full bg-white hover:bg-slate-200 text-slate-400 hover:text-slate-700 flex items-center justify-center transition-all cursor-pointer"
+                            >
+                                <X className="w-4 h-4" />
+                            </button>
+                        </div>
+
+                        {/* Body */}
+                        <div className="p-6 space-y-4">
+                            {/* Prepaid Refund Highlight Card */}
+                            <div className="p-4 bg-purple-50/70 border border-purple-200/80 rounded-2xl flex items-start gap-3">
+                                <CreditCard className="w-5 h-5 text-purple-600 shrink-0 mt-0.5" />
+                                <div className="text-xs text-purple-900 leading-relaxed">
+                                    <p className="font-bold">Automated Prepaid Refund Guarantee</p>
+                                    <p className="mt-0.5 text-purple-800">
+                                        If paid online, your full amount of{" "}
+                                        <strong className="font-black text-purple-950">
+                                            ₹{Number(cancelModalOrder.totalamount || 0).toLocaleString("en-IN")}
+                                        </strong>{" "}
+                                        will be automatically refunded to your original payment method (Card/UPI/Bank) within 5–7 business days.
+                                    </p>
+                                </div>
+                            </div>
+
+                            <div>
+                                <label className="block text-xs font-bold text-slate-700 mb-2">
+                                    Please select a reason for cancellation *
+                                </label>
+                                <div className="space-y-2">
+                                    {CANCELLATION_REASONS.map((r) => (
+                                        <label
+                                            key={r}
+                                            className={`flex items-center gap-3 p-3 rounded-xl border text-xs font-medium cursor-pointer transition-all ${
+                                                cancelReason === r
+                                                    ? "bg-purple-50/60 border-purple-300 text-purple-900 font-bold"
+                                                    : "bg-white border-slate-200 text-slate-700 hover:bg-slate-50"
+                                            }`}
+                                        >
+                                            <input
+                                                type="radio"
+                                                name="cancelReason"
+                                                checked={cancelReason === r}
+                                                onChange={() => setCancelReason(r)}
+                                                className="text-purple-600 focus:ring-purple-500 w-4 h-4"
+                                            />
+                                            <span>{r}</span>
+                                        </label>
+                                    ))}
+                                </div>
+                            </div>
+
+                            {/* Buttons */}
+                            <div className="pt-3 flex gap-3">
+                                <button
+                                    type="button"
+                                    onClick={() => setCancelModalOrder(null)}
+                                    className="w-1/2 py-3 border border-slate-200 hover:bg-slate-50 text-slate-700 font-bold text-xs rounded-xl transition-all cursor-pointer"
+                                >
+                                    Keep Order
+                                </button>
+                                <button
+                                    type="button"
+                                    disabled={actionLoading}
+                                    onClick={handleConfirmCancel}
+                                    className="w-1/2 py-3 bg-rose-600 hover:bg-rose-700 disabled:bg-rose-300 text-white font-bold text-xs rounded-xl shadow-md shadow-rose-200 transition-all flex items-center justify-center gap-2 cursor-pointer"
+                                >
+                                    {actionLoading ? (
+                                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                                    ) : (
+                                        <span>Confirm Cancel</span>
+                                    )}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* ======================================================== */}
+            {/* RETURN ORDER MODAL                                      */}
+            {/* ======================================================== */}
+            {returnModalOrder && (
+                <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+                    <div className="bg-white w-full max-w-md rounded-3xl shadow-2xl border border-slate-100 overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+                        {/* Header */}
+                        <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/80">
+                            <div className="flex items-center gap-2.5 text-amber-700">
+                                <RotateCcw className="w-5 h-5" />
+                                <h3 className="font-extrabold text-slate-900 text-base">
+                                    Return Order #{String(returnModalOrder._id).slice(-8).toUpperCase()}
+                                </h3>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={() => setReturnModalOrder(null)}
+                                className="w-8 h-8 rounded-full bg-white hover:bg-slate-200 text-slate-400 hover:text-slate-700 flex items-center justify-center transition-all cursor-pointer"
+                            >
+                                <X className="w-4 h-4" />
+                            </button>
+                        </div>
+
+                        {/* Body */}
+                        <div className="p-6 space-y-4">
+                            {/* Return Notice Card */}
+                            <div className="p-4 bg-amber-50/70 border border-amber-200/80 rounded-2xl flex items-start gap-3">
+                                <Truck className="w-5 h-5 text-amber-700 shrink-0 mt-0.5" />
+                                <div className="text-xs text-amber-900 leading-relaxed">
+                                    <p className="font-bold">Hassle-Free Doorstep Reverse Pickup</p>
+                                    <p className="mt-0.5 text-amber-800">
+                                        Our courier partner will visit your shipping address for product pickup and verification. Full refund of{" "}
+                                        <strong className="font-black text-amber-950">
+                                            ₹{Number(returnModalOrder.totalamount || 0).toLocaleString("en-IN")}
+                                        </strong>{" "}
+                                        will be credited back to your account upon pickup confirmation.
+                                    </p>
+                                </div>
+                            </div>
+
+                            <div>
+                                <label className="block text-xs font-bold text-slate-700 mb-2">
+                                    Select Return Reason *
+                                </label>
+                                <div className="space-y-2">
+                                    {RETURN_REASONS.map((r) => (
+                                        <label
+                                            key={r}
+                                            className={`flex items-center gap-3 p-3 rounded-xl border text-xs font-medium cursor-pointer transition-all ${
+                                                returnReason === r
+                                                    ? "bg-amber-50/70 border-amber-300 text-amber-900 font-bold"
+                                                    : "bg-white border-slate-200 text-slate-700 hover:bg-slate-50"
+                                            }`}
+                                        >
+                                            <input
+                                                type="radio"
+                                                name="returnReason"
+                                                checked={returnReason === r}
+                                                onChange={() => setReturnReason(r)}
+                                                className="text-amber-600 focus:ring-amber-500 w-4 h-4"
+                                            />
+                                            <span>{r}</span>
+                                        </label>
+                                    ))}
+                                </div>
+                            </div>
+
+                            {/* Additional Comments */}
+                            <div>
+                                <label className="block text-xs font-bold text-slate-700 mb-1.5">
+                                    Additional details / feedback (Optional)
+                                </label>
+                                <textarea
+                                    rows={2}
+                                    value={returnComments}
+                                    onChange={(e) => setReturnComments(e.target.value)}
+                                    placeholder="Explain the issue or feedback for the seller..."
+                                    className="w-full bg-slate-50 border border-slate-200 rounded-xl py-2 px-3 text-xs text-slate-900 focus:outline-none focus:border-amber-500 focus:bg-white transition-all"
+                                />
+                            </div>
+
+                            {/* Buttons */}
+                            <div className="pt-2 flex gap-3">
+                                <button
+                                    type="button"
+                                    onClick={() => setReturnModalOrder(null)}
+                                    className="w-1/2 py-3 border border-slate-200 hover:bg-slate-50 text-slate-700 font-bold text-xs rounded-xl transition-all cursor-pointer"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    type="button"
+                                    disabled={actionLoading}
+                                    onClick={handleConfirmReturn}
+                                    className="w-1/2 py-3 bg-amber-600 hover:bg-amber-700 disabled:bg-amber-300 text-white font-bold text-xs rounded-xl shadow-md shadow-amber-200 transition-all flex items-center justify-center gap-2 cursor-pointer"
+                                >
+                                    {actionLoading ? (
+                                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                                    ) : (
+                                        <span>Submit Return</span>
+                                    )}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
