@@ -9,7 +9,12 @@ function SellerRoute({children}){
     }
 
     if(user?.role !== "seller"){
-        return <Navigate to="/seller/dashboard" replace/>
+        return <Navigate to="/" replace/>
+    }
+
+    // 🛑 Gated: Seller must complete business & contact verification before accessing Seller Hub
+    if(user?.role === "seller" && !user?.sellerDetails?.isSellerVerified){
+        return <Navigate to="/seller/onboarding" replace/>
     }
 
     return children;

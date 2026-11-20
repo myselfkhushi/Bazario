@@ -47,7 +47,7 @@ export default function Navbar() {
   const location = useLocation();
 
   // Route flags
-  const isAuthPage = location.pathname === "/login" || location.pathname === "/register";
+  const isAuthPage = location.pathname === "/login" || location.pathname === "/register" || location.pathname === "/seller/onboarding";
 
   // Item counts
   const cartCount = isAuthenticated ? (cart?.length ?? 0) : (guestCart?.length ?? 0);
@@ -272,80 +272,82 @@ export default function Navbar() {
             </div>
           </div>
 
-          {/* Search Bar (Desktop) with Auto-Suggest */}
-          <div className="hidden lg:flex flex-1 max-w-2xl mx-auto px-8 relative" ref={searchRef}>
-            <form onSubmit={handleSearchSubmit} className="w-full relative">
-              <div className="flex items-center bg-slate-50 hover:bg-slate-100 focus-within:bg-white rounded-full border border-slate-200 transition-all overflow-hidden h-10 px-4 shadow-sm">
-                <Search className="w-4 h-4 text-slate-400 shrink-0" />
-                <input
-                  type="text"
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  onFocus={() => {
-                    if (suggestions.length > 0) setShowSuggestions(true);
-                  }}
-                  placeholder="Search products..."
-                  className="w-full h-full px-3 text-[13px] bg-transparent text-slate-900 placeholder-slate-400 !outline-none !ring-0 !border-none !shadow-none"
-                  style={{ boxShadow: "none" }}
-                />
-                {isSearching ? (
-                  <div className="w-3.5 h-3.5 border-2 border-slate-300 border-t-slate-600 rounded-full animate-spin shrink-0"></div>
-                ) : search && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setSearch("");
-                      setSuggestions([]);
-                      setShowSuggestions(false);
+          {/* Search Bar (Desktop) with Auto-Suggest — Hidden on Login/Register */}
+          {!isAuthPage && (
+            <div className="hidden lg:flex flex-1 max-w-2xl mx-auto px-8 relative" ref={searchRef}>
+              <form onSubmit={handleSearchSubmit} className="w-full relative">
+                <div className="flex items-center bg-slate-50 hover:bg-slate-100 focus-within:bg-white rounded-full border border-slate-200 transition-all overflow-hidden h-10 px-4 shadow-sm">
+                  <Search className="w-4 h-4 text-slate-400 shrink-0" />
+                  <input
+                    type="text"
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    onFocus={() => {
+                      if (suggestions.length > 0) setShowSuggestions(true);
                     }}
-                    className="p-1 text-slate-400 hover:text-slate-600 shrink-0"
-                  >
-                    <X className="w-3.5 h-3.5" />
-                  </button>
-                )}
-              </div>
-            </form>
-
-            {/* Search Suggestions Dropdown */}
-            {showSuggestions && suggestions.length > 0 && (
-              <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-2xl border border-slate-100 shadow-xl overflow-hidden z-50">
-                <div className="p-2">
-                  <h4 className="text-[10px] font-bold uppercase tracking-widest text-slate-400 px-3 pb-2 pt-1 border-b border-slate-50 mb-1">
-                    Products
-                  </h4>
-                  {suggestions.map((item) => (
-                    <Link
-                      key={item._id}
-                      to={`/product/${item._id}`}
-                      onClick={() => setShowSuggestions(false)}
-                      className="flex items-center gap-3 p-2 rounded-xl hover:bg-slate-50 transition-colors"
+                    placeholder="Search products..."
+                    className="w-full h-full px-3 text-[13px] bg-transparent text-slate-900 placeholder-slate-400 !outline-none !ring-0 !border-none !shadow-none"
+                    style={{ boxShadow: "none" }}
+                  />
+                  {isSearching ? (
+                    <div className="w-3.5 h-3.5 border-2 border-slate-300 border-t-slate-600 rounded-full animate-spin shrink-0"></div>
+                  ) : search && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSearch("");
+                        setSuggestions([]);
+                        setShowSuggestions(false);
+                      }}
+                      className="p-1 text-slate-400 hover:text-slate-600 shrink-0"
                     >
-                      <div className="w-10 h-10 rounded-lg bg-slate-100 overflow-hidden shrink-0 border border-slate-200">
-                        {item.images?.[0] ? (
-                          <img src={item.images[0].url} alt={item.title} className="w-full h-full object-cover" />
-                        ) : (
-                          <Package className="w-4 h-4 m-3 text-slate-300" />
-                        )}
-                      </div>
-                      <div className="flex-1 overflow-hidden">
-                        <p className="text-[13px] font-bold text-slate-900 truncate">{item.title}</p>
-                        <p className="text-[11px] font-medium text-slate-500">
-                          ₹{item.price.toLocaleString("en-IN")}
-                        </p>
-                      </div>
-                    </Link>
-                  ))}
-                  
-                  <button
-                    onClick={handleSearchSubmit}
-                    className="w-full mt-1 p-2 text-xs font-bold text-purple-600 hover:bg-purple-50 rounded-xl transition-colors flex items-center justify-center gap-1"
-                  >
-                    View all results <ArrowRight className="w-3 h-3" />
-                  </button>
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  )}
                 </div>
-              </div>
-            )}
-          </div>
+              </form>
+
+              {/* Search Suggestions Dropdown */}
+              {showSuggestions && suggestions.length > 0 && (
+                <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-2xl border border-slate-100 shadow-xl overflow-hidden z-50">
+                  <div className="p-2">
+                    <h4 className="text-[10px] font-bold uppercase tracking-widest text-slate-400 px-3 pb-2 pt-1 border-b border-slate-50 mb-1">
+                      Products
+                    </h4>
+                    {suggestions.map((item) => (
+                      <Link
+                        key={item._id}
+                        to={`/product/${item._id}`}
+                        onClick={() => setShowSuggestions(false)}
+                        className="flex items-center gap-3 p-2 rounded-xl hover:bg-slate-50 transition-colors"
+                      >
+                        <div className="w-10 h-10 rounded-lg bg-slate-100 overflow-hidden shrink-0 border border-slate-200">
+                          {item.images?.[0] ? (
+                            <img src={item.images[0].url} alt={item.title} className="w-full h-full object-cover" />
+                          ) : (
+                            <Package className="w-4 h-4 m-3 text-slate-300" />
+                          )}
+                        </div>
+                        <div className="flex-1 overflow-hidden">
+                          <p className="text-[13px] font-bold text-slate-900 truncate">{item.title}</p>
+                          <p className="text-[11px] font-medium text-slate-500">
+                            ₹{item.price.toLocaleString("en-IN")}
+                          </p>
+                        </div>
+                      </Link>
+                    ))}
+                    
+                    <button
+                      onClick={handleSearchSubmit}
+                      className="w-full mt-1 p-2 text-xs font-bold text-purple-600 hover:bg-purple-50 rounded-xl transition-colors flex items-center justify-center gap-1"
+                    >
+                      View all results <ArrowRight className="w-3 h-3" />
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Right Action Icons */}
           <div className="flex items-center gap-1 sm:gap-3">

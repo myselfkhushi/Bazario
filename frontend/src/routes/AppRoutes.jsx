@@ -19,6 +19,7 @@ import AddProduct from "../pages/seller/AddProduct";
 import SellerRoute from "./SellerRoute";
 import SellerLayout from "../layouts/SellerLayout.jsx";
 import EditProduct from "../pages/seller/EditProduct.jsx";
+import SellerOnboarding from "../pages/seller/SellerOnboarding.jsx";
 import Wishlist from "../pages/Buyer/Wishlist.jsx";
 import Profile from "../pages/Profile";
 
@@ -87,6 +88,7 @@ function AppRoutes() {
 
           <Route path="/register" element={<Register />} />
           <Route path="/login" element={<Login />} />
+          <Route path="/seller/onboarding" element={<ProtectedRoute><SellerOnboarding /></ProtectedRoute>} />
         </Route>
 
         {/* 🛑 SELLER PORTAL — OUTSIDE MainLayout (Dedicated Seller Hub Top Navbar & Pages) */}

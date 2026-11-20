@@ -24,3 +24,8 @@ export const updateUserProfile = async (userData) => {
     const response = await api.put("/auth/me", userData);
     return response.data;
 };
+
+export const completeSellerOnboardingAPI = async (sellerData) => {
+    const response = await api.post("/auth/seller/onboarding", sellerData);
+    return response.data;
+};

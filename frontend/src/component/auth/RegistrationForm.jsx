@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { useDispatch } from "react-redux";
 import { useNavigate, Link } from "react-router-dom";
-import { User, Mail, Lock, Eye, EyeOff, ArrowRight, AlertCircle, CheckCircle2 } from "lucide-react";
+import { User, Mail, Lock, Eye, EyeOff, ArrowRight, AlertCircle, CheckCircle2, ShoppingBag, Store } from "lucide-react";
 import toast from "react-hot-toast";
 
 import { registerUser } from "../../features/auth/authAPI";
@@ -23,6 +23,7 @@ function RegistrationForm() {
 
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+    const [selectedRole, setSelectedRole] = useState("buyer");
     const [submitting, setSubmitting] = useState(false);
     const [formError, setFormError] = useState("");
 
@@ -36,6 +37,7 @@ function RegistrationForm() {
                 name: data.name,
                 email: data.email,
                 password: data.password,
+                role: selectedRole
             });
 
             if (response.token) {
@@ -43,8 +45,14 @@ function RegistrationForm() {
             }
 
             dispatch(setUser(response.user));
-            toast.success("Account created successfully! Welcome to Bazario!");
-            navigate("/");
+
+            if (selectedRole === "seller") {
+                toast.success("Account created! Let's complete your business verification.");
+                navigate("/seller/onboarding");
+            } else {
+                toast.success("Account created successfully! Welcome to Bazario!");
+                navigate("/");
+            }
         } catch (error) {
             const msg = error.response?.data?.message || "Registration failed. Please try again.";
             setFormError(msg);
@@ -125,6 +133,54 @@ function RegistrationForm() {
                     {/* Form */}
                     <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
                         
+                        {/* Account Type Selection */}
+                        <div className="pb-1">
+                            <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2.5">
+                                Register As
+                            </label>
+                            <div className="grid grid-cols-2 gap-3">
+                                <button
+                                    type="button"
+                                    onClick={() => setSelectedRole("buyer")}
+                                    className={`p-3 rounded-2xl border text-left transition flex items-center gap-3 cursor-pointer ${
+                                        selectedRole === "buyer"
+                                            ? "border-purple-600 bg-purple-50/70 ring-2 ring-purple-600/20"
+                                            : "border-slate-200 hover:border-slate-300 bg-slate-50/50"
+                                    }`}
+                                >
+                                    <div className={`p-2 rounded-xl shrink-0 ${
+                                        selectedRole === "buyer" ? "bg-purple-600 text-white" : "bg-white text-slate-500 border border-slate-200"
+                                    }`}>
+                                        <ShoppingBag className="w-4 h-4" />
+                                    </div>
+                                    <div className="min-w-0">
+                                        <p className="text-xs font-black text-slate-900 truncate">Customer</p>
+                                        <p className="text-[10px] text-slate-500 font-medium truncate">Shop & Buy</p>
+                                    </div>
+                                </button>
+
+                                <button
+                                    type="button"
+                                    onClick={() => setSelectedRole("seller")}
+                                    className={`p-3 rounded-2xl border text-left transition flex items-center gap-3 cursor-pointer ${
+                                        selectedRole === "seller"
+                                            ? "border-purple-600 bg-purple-50/70 ring-2 ring-purple-600/20"
+                                            : "border-slate-200 hover:border-slate-300 bg-slate-50/50"
+                                    }`}
+                                >
+                                    <div className={`p-2 rounded-xl shrink-0 ${
+                                        selectedRole === "seller" ? "bg-purple-600 text-white" : "bg-white text-slate-500 border border-slate-200"
+                                    }`}>
+                                        <Store className="w-4 h-4" />
+                                    </div>
+                                    <div className="min-w-0">
+                                        <p className="text-xs font-black text-slate-900 truncate">Seller</p>
+                                        <p className="text-[10px] text-slate-500 font-medium truncate">Sell & Earn</p>
+                                    </div>
+                                </button>
+                            </div>
+                        </div>
+
                         {/* Name */}
                         <div>
                             <label className="block text-xs font-bold text-slate-700 mb-2">
@@ -267,7 +323,7 @@ function RegistrationForm() {
                                 <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                             ) : (
                                 <>
-                                    <span>Create Account</span>
+                                    <span>{selectedRole === "seller" ? "Continue to Business Verification" : "Create Account"}</span>
                                     <ArrowRight className="w-4 h-4" />
                                 </>
                             )}
