@@ -412,11 +412,12 @@ function Checkout() {
     // Validate active address before payment
     const validateActiveAddress = () => {
         if (!address?.fullName?.trim()) return false;
-        const cleanPhone = address?.phone?.replace(/\D/g, "");
+        const cleanPhone = (address?.phone || "").replace(/\D/g, "");
         if (!cleanPhone || cleanPhone.length !== 10) return false;
         if (!address?.street?.trim()) return false;
         if (!address?.city?.trim()) return false;
-        if (!address?.pincode?.trim() || address.pincode.replace(/\D/g, "").length !== 6) return false;
+        const cleanPin = (address?.pincode || "").replace(/\D/g, "");
+        if (!cleanPin || cleanPin.length !== 6) return false;
         return true;
     };
 
@@ -453,13 +454,22 @@ function Checkout() {
         try {
             setPaymentLoading(true);
 
+            const cleanStreet = (address.street || "").trim();
+            const cleanPincode = (address.pincode || "").trim().replace(/\D/g, "");
+            const cleanCity = (address.city || "").trim();
+            const cleanState = (address.state || "Rajasthan").trim();
+            const cleanFullName = (address.fullName || user?.name || "Customer").trim();
+            const cleanPhone = (address.phone || "").trim().replace(/\D/g, "");
+
             const shippingPayload = {
-                fullName: address.fullName.trim(),
-                phone: address.phone.trim(),
-                street: address.street.trim(),
-                city: address.city.trim(),
-                state: address.state.trim(),
-                pincode: address.pincode.trim(),
+                fullName: cleanFullName,
+                phone: cleanPhone,
+                street: cleanStreet,
+                address: cleanStreet, // backward compatibility with controllers expecting 'address'
+                city: cleanCity,
+                state: cleanState,
+                pincode: cleanPincode,
+                postalCode: cleanPincode, // backward compatibility with controllers expecting 'postalCode'
             };
 
             const response = await createPaymentOrder({ shippingAddress: shippingPayload });
