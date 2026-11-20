@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import toast from "react-hot-toast";
@@ -27,6 +27,13 @@ export default function SellerOnboarding() {
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const { user } = useSelector((state) => state.auth);
+
+  // If already verified, direct to Seller Dashboard
+  useEffect(() => {
+    if (user?.role === "seller" && user?.sellerDetails?.isSellerVerified) {
+      navigate("/seller/dashboard", { replace: true });
+    }
+  }, [user, navigate]);
 
   // Active Wizard Step (1: Contact, 2: GSTIN, 3: Store, 4: Pickup Location)
   const [currentStep, setCurrentStep] = useState(1);
@@ -163,7 +170,13 @@ export default function SellerOnboarding() {
       toast.success("🎉 Seller Registration Complete! Welcome to Bazario Seller Hub.");
       navigate("/seller/dashboard");
     } catch (err) {
-      toast.error(err.response?.data?.message || "Failed to complete seller onboarding");
+      console.error("Seller onboarding error:", err);
+      const serverMsg = err.response?.data?.message;
+      if (err.response?.status === 401) {
+        toast.error("Session expired or unauthorized. Please re-login.");
+      } else {
+        toast.error(serverMsg || (err.message === "Network Error" ? "Unable to connect to backend server. Ensure backend is running on port 5000." : err.message) || "Failed to complete seller onboarding");
+      }
     } finally {
       setSubmitting(false);
     }

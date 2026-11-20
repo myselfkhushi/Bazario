@@ -21,14 +21,23 @@ function App() {
         const response = await getProfile();
         dispatch(setUser(response.user));
 
-        const wishlistResponse = await getMyWishlist();
-        dispatch(setWishlist(wishlistResponse.wishlist));
+        // Wishlist & Cart are secondary and non-blocking
+        try {
+          const wishlistResponse = await getMyWishlist();
+          dispatch(setWishlist(wishlistResponse?.wishlist || []));
+        } catch {
+          // Non-critical
+        }
 
-        const cartResponse = await getMyCart();
-        dispatch(setCart(cartResponse.cart));
+        try {
+          const cartResponse = await getMyCart();
+          dispatch(setCart(cartResponse?.cart || []));
+        } catch {
+          // Non-critical
+        }
       } catch (error) {
-        // Suppress errors for unauthenticated initial load and remove invalid token
-        if (error.response?.status === 401 || error.response?.status === 403) {
+        // Only clear token if profile authentication failed with 401
+        if (error.response?.status === 401) {
           localStorage.removeItem("token");
         }
       } finally {
