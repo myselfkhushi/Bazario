@@ -21,7 +21,7 @@ function SellerLayout() {
                             B
                         </div>
                         <span className="text-xl font-black tracking-tight text-slate-900 uppercase">
-                            Seller Hub
+                            Home
                         </span>
                     </Link>
                 </div>

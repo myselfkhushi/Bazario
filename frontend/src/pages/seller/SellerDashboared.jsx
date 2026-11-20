@@ -167,7 +167,7 @@ export default function SellerDashboared() {
                 <div>
                     <h1 className="text-2xl sm:text-3xl font-black tracking-tight flex items-center gap-2.5">
                         <Store className="w-7 h-7 text-indigo-600" />
-                        Order Fulfillment Hub
+                        Seller Hub
                     </h1>
                     <p className="text-slate-500 text-xs sm:text-sm mt-1 font-medium">
                         Manage your end-to-end packing, label printing, and courier handovers in real time.
