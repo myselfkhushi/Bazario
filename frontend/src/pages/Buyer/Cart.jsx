@@ -16,7 +16,9 @@ function Cart() {
     const { items: guestCart } = useSelector((state) => state.guestCart);
     const { isAuthenticated } = useSelector((state) => state.auth);
 
-    const activeCart = isAuthenticated ? cart : guestCart;
+    const activeCart = isAuthenticated 
+        ? (Array.isArray(cart) ? cart : (Array.isArray(cart?.availableItems) ? cart.availableItems : [])) 
+        : (Array.isArray(guestCart) ? guestCart : []);
 
     useEffect(() => {
         if (isAuthenticated) {

@@ -22,15 +22,19 @@ export default function ProductCard({ product }) {
   const [isAdding, setIsAdding] = useState(false);
   const [isUpdatingQty, setIsUpdatingQty] = useState(false);
 
-  // Check wishlist state
-  const isAuthLiked = wishlist?.some((item) => (item.product?._id || item.product) === product._id);
-  const isGuestLiked = guestWishlist?.some((item) => (item.product?._id || item._id) === product._id);
+  // Check wishlist state safely
+  const wishlistList = Array.isArray(wishlist) ? wishlist : [];
+  const guestWishlistList = Array.isArray(guestWishlist) ? guestWishlist : [];
+  const isAuthLiked = wishlistList.some((item) => (item.product?._id || item.product) === product._id);
+  const isGuestLiked = guestWishlistList.some((item) => (item.product?._id || item._id) === product._id);
   const isLiked = isAuthenticated ? isAuthLiked : isGuestLiked;
 
-  // Check cart state
+  // Check cart state safely (guards against non-array cart payloads)
+  const cartList = Array.isArray(cart) ? cart : (Array.isArray(cart?.availableItems) ? cart.availableItems : []);
+  const guestCartList = Array.isArray(guestCart) ? guestCart : [];
   const cartItem = isAuthenticated
-    ? cart?.find((item) => (item.product?._id || item.product) === product._id)
-    : guestCart?.find((item) => (item.product?._id || item._id) === product._id);
+    ? cartList.find((item) => (item.product?._id || item.product) === product._id)
+    : guestCartList.find((item) => (item.product?._id || item._id) === product._id);
   const quantityInCart = cartItem?.quantity || 0;
 
   const handleWishlistToggle = async (e) => {
@@ -54,7 +58,7 @@ export default function ProductCard({ product }) {
         dispatch(addWishListItem(res.wishlist));
         toast.success("Added to wishlist!");
       } else {
-        const item = wishlist.find((w) => (w.product?._id || w.product) === product._id);
+        const item = wishlistList.find((w) => (w.product?._id || w.product) === product._id);
         if (item) {
           await removeFromWishlist(item._id);
           dispatch(removeWishlistItem(item._id));

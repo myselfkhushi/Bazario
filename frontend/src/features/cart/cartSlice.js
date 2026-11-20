@@ -15,7 +15,15 @@ const cartSlice = createSlice({
         },
 
         setCart:(state,action)=>{
-            state.cart=action.payload;
+            if (Array.isArray(action.payload)) {
+                state.cart = action.payload;
+            } else if (action.payload && Array.isArray(action.payload.availableItems)) {
+                state.cart = action.payload.availableItems;
+            } else if (action.payload && Array.isArray(action.payload.items)) {
+                state.cart = action.payload.items;
+            } else {
+                state.cart = [];
+            }
             state.loading=false;
             state.error=null;
         },
