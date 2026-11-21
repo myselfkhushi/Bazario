@@ -28,11 +28,12 @@ import {
 } from "lucide-react";
 
 import { getSellerOrders } from "../../features/seller/sellerSlice";
-import { updateSellerOrderStatus } from "../../features/seller/sellerAPI";
+import { updateSellerOrderStatus, markSellerLabelPrintedAPI } from "../../features/seller/sellerAPI";
 import ShippingLabelModal from "../../component/seller/ShippingLabelModal.jsx";
 
 export default function SellerDashboared() {
     const dispatch = useDispatch();
+    const { user } = useSelector((state) => state.auth);
     const { orders = [], loading } = useSelector((state) => state.seller);
 
     // Active Tab State (Default: 'new' orders)
@@ -61,27 +62,57 @@ export default function SellerDashboared() {
         return Array.from(map.values());
     }, [localOrders, orders]);
 
-    // Track which orders have had their labels printed
+    // Track which orders have had their labels printed (Scoped per Seller User ID)
     const [printedOrderIds, setPrintedOrderIds] = useState(() => {
         try {
-            const saved = localStorage.getItem("seller_printed_orders");
+            const storageKey = user?._id ? `seller_printed_orders_${user._id}` : "seller_printed_orders";
+            const saved = localStorage.getItem(storageKey);
             return saved ? new Set(JSON.parse(saved)) : new Set();
         } catch {
             return new Set();
         }
     });
 
-    const markLabelAsPrinted = (orderId) => {
+    // Synchronize printed status from backend database for this seller
+    useEffect(() => {
+        if (!uniqueOrders || uniqueOrders.length === 0) return;
+        const dbPrintedIds = uniqueOrders
+            .filter((o) => Boolean(o.isLabelPrinted))
+            .map((o) => o._id);
+
+        if (dbPrintedIds.length > 0) {
+            setPrintedOrderIds((prev) => {
+                const next = new Set(prev);
+                dbPrintedIds.forEach((id) => next.add(id));
+                return next;
+            });
+        }
+    }, [uniqueOrders]);
+
+    const markLabelAsPrinted = async (orderId) => {
+        const storageKey = user?._id ? `seller_printed_orders_${user._id}` : "seller_printed_orders";
         setPrintedOrderIds((prev) => {
             const next = new Set(prev);
             next.add(orderId);
             try {
-                localStorage.setItem("seller_printed_orders", JSON.stringify([...next]));
+                localStorage.setItem(storageKey, JSON.stringify([...next]));
             } catch {
                 // Ignore storage error
             }
             return next;
         });
+
+        // Optimistically update local order state
+        setLocalOrders((prev) =>
+            prev.map((o) => (o._id === orderId ? { ...o, isLabelPrinted: true } : o))
+        );
+
+        // Persist to backend database strictly for this seller's products
+        try {
+            await markSellerLabelPrintedAPI(orderId);
+        } catch (err) {
+            console.error("Failed to persist label printed status to backend", err);
+        }
     };
 
     // Modals
@@ -592,7 +623,7 @@ export default function SellerDashboared() {
                     {filteredOrders.map((order) => {
                         const isOrderInFlight = inFlightOrders.has(order._id);
                         const st = order.orderstatus?.toLowerCase();
-                        const isLabelPrinted = printedOrderIds.has(order._id);
+                        const isLabelPrinted = printedOrderIds.has(order._id) || Boolean(order.isLabelPrinted);
 
                         return (
                             <div
