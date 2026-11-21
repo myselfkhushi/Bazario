@@ -1,101 +1,141 @@
 import mongoose from "mongoose";
 
-const orderSchema= new mongoose.Schema({
-
-   user:{
-    type:mongoose.Schema.Types.ObjectId,
-    required:true,
-    ref:"User"
-   },
-
-   orderitem:[
+const orderSchema = new mongoose.Schema(
     {
-      product:{
-        type:mongoose.Schema.Types.ObjectId,
-        ref:"Product",
-        required:true
-      },
-      
-      seller:{
-        type:mongoose.Schema.Types.ObjectId,
-        ref:"User"
-      },
-   
-     title: {
-        type: String,
-        required: true,
-      },
-      image: {
-        type: String,
-        required: true,
-      },
-      brand: {
-        type: String,
-        default: "Bazario Official",
-      },
-      quantity:{
-        type:Number,
-        required:true
-      },
-      price:{
-        type:Number,
-        required:true
-      }
-   },
-],
-   shippingAddress: {
-     fullName: { type: String, required: true },
-     phone: { type: String, required: true },
-     street: { type: String, required: true },
-     city: { type: String, required: true },
-     state: { type: String, required: true },
-     pincode: { type: String, required: true },
-   },
-   totalamount:{
-    type:Number,
-    required:true
-   },
-   orderstatus:{
-       type:String,
-       enum:[
-           "pending",
-           "confirmed",
-           "processing",
-           "rtd",
-           "shipped",
-           "out_for_delivery",
-           "delivered",
-           "cancelled",
-           "returned",
-           "return_requested",
-           "rto"
-       ],
-       default:"pending",
-   },
-   courier: {
-       type: String,
-       default: "",
-   },
-   trackingNumber: {
-       type: String,
-       default: "",
-   },
-   statusHistory: [
-       {
-           status: { type: String, required: true },
-           timestamp: { type: Date, default: Date.now },
-           message: { type: String, default: "" },
-           location: { type: String, default: "" },
-       }
-   ],
-},
-{
-    timestamps:true
-});
+        user: {
+            type: mongoose.Schema.Types.ObjectId,
+            required: true,
+            ref: "User",
+        },
+
+        orderitem: [
+            {
+                product: {
+                    type: mongoose.Schema.Types.ObjectId,
+                    ref: "Product",
+                    required: true,
+                },
+
+                seller: {
+                    type: mongoose.Schema.Types.ObjectId,
+                    ref: "User",
+                },
+
+                title: {
+                    type: String,
+                    required: true,
+                },
+                image: {
+                    type: String,
+                    required: true,
+                },
+                brand: {
+                    type: String,
+                    default: "Bazario Official",
+                },
+                quantity: {
+                    type: Number,
+                    required: true,
+                },
+                price: {
+                    type: Number,
+                    required: true,
+                },
+                // Independent Per-Seller Fulfillment Tracking
+                status: {
+                    type: String,
+                    enum: [
+                        "pending",
+                        "confirmed",
+                        "processing",
+                        "rtd",
+                        "shipped",
+                        "out_for_delivery",
+                        "delivered",
+                        "cancelled",
+                        "returned",
+                        "return_requested",
+                        "rto",
+                    ],
+                    default: "pending",
+                },
+                courier: {
+                    type: String,
+                    default: "",
+                },
+                trackingNumber: {
+                    type: String,
+                    default: "",
+                },
+                isLabelPrinted: {
+                    type: Boolean,
+                    default: false,
+                },
+                statusHistory: [
+                    {
+                        status: { type: String, required: true },
+                        timestamp: { type: Date, default: Date.now },
+                        message: { type: String, default: "" },
+                        location: { type: String, default: "" },
+                    },
+                ],
+            },
+        ],
+        shippingAddress: {
+            fullName: { type: String, required: true },
+            phone: { type: String, required: true },
+            street: { type: String, required: true },
+            city: { type: String, required: true },
+            state: { type: String, required: true },
+            pincode: { type: String, required: true },
+        },
+        totalamount: {
+            type: Number,
+            required: true,
+        },
+        // Overall Aggregate Order Status
+        orderstatus: {
+            type: String,
+            enum: [
+                "pending",
+                "confirmed",
+                "processing",
+                "rtd",
+                "shipped",
+                "out_for_delivery",
+                "delivered",
+                "cancelled",
+                "returned",
+                "return_requested",
+                "rto",
+            ],
+            default: "pending",
+        },
+        courier: {
+            type: String,
+            default: "",
+        },
+        trackingNumber: {
+            type: String,
+            default: "",
+        },
+        statusHistory: [
+            {
+                status: { type: String, required: true },
+                timestamp: { type: Date, default: Date.now },
+                message: { type: String, default: "" },
+                location: { type: String, default: "" },
+            },
+        ],
+    },
+    {
+        timestamps: true,
+    }
+);
 
 orderSchema.index({ user: 1, createdAt: -1 });
 orderSchema.index({ "orderitem.seller": 1, createdAt: -1 });
 orderSchema.index({ orderstatus: 1 });
 
-const Order=mongoose.model("Order",orderSchema);
+const Order = mongoose.model("Order", orderSchema);
 export default Order;

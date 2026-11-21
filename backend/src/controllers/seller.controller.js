@@ -4,11 +4,12 @@ import asynchandler from "../utils/asynchandler.js";
 import ApiError from "../utils/apierror.js";
 
 // Helper: Filter order items strictly to the requesting seller's products
-// and calculate seller-specific subtotal
+// and calculate seller-specific subtotal and individual fulfillment state
 const formatOrderForSeller = (order, sellerId) => {
     const rawOrder = order.toObject ? order.toObject() : order;
     const sellerIdStr = sellerId.toString();
 
+    // Only this seller's products
     const sellerItems = (rawOrder.orderitem || []).filter(
         (item) => (item.seller?._id || item.seller)?.toString() === sellerIdStr
     );
@@ -23,9 +24,21 @@ const formatOrderForSeller = (order, sellerId) => {
         0
     );
 
+    // Determine this seller's independent fulfillment status
+    // Priority: use item-level status; fallback to orderstatus if legacy order
+    const sellerStatus = sellerItems[0]?.status || rawOrder.orderstatus || "pending";
+    const sellerCourier = sellerItems[0]?.courier || rawOrder.courier || "";
+    const sellerTrackingNumber = sellerItems[0]?.trackingNumber || rawOrder.trackingNumber || "";
+    const isLabelPrinted =
+        sellerItems.length > 0 ? sellerItems.every((i) => Boolean(i.isLabelPrinted)) : false;
+
     return {
         ...rawOrder,
         orderitem: sellerItems,
+        orderstatus: sellerStatus, // Individual seller status
+        courier: sellerCourier,
+        trackingNumber: sellerTrackingNumber,
+        isLabelPrinted,
         totalamount: sellerTotalAmount, // Overridden to seller-specific revenue for direct UI compatibility
         sellerTotalAmount,
         sellerTotalQuantity,
@@ -38,7 +51,6 @@ export const getSellerDashboard = asynchandler(async (req, res) => {
     const sellerId = req.user._id;
     const sellerIdStr = sellerId.toString();
 
-    // 1. Products metrics
     const totalProducts = await Product.countDocuments({
         createdBy: sellerId,
     });
@@ -48,7 +60,6 @@ export const getSellerDashboard = asynchandler(async (req, res) => {
         stock: { $lte: 5 },
     });
 
-    // 2. Fetch all orders containing this seller's products
     const orders = await Order.find({
         "orderitem.seller": sellerId,
     }).lean();
@@ -60,36 +71,35 @@ export const getSellerDashboard = asynchandler(async (req, res) => {
     let totalItemsSold = 0;
 
     orders.forEach((order) => {
-        const st = (order.orderstatus || "").toLowerCase();
-
-        // Calculate revenue ONLY from this seller's items in the order
         const sellerItems = (order.orderitem || []).filter(
             (item) => (item.seller?._id || item.seller)?.toString() === sellerIdStr
         );
 
-        const orderSellerAmount = sellerItems.reduce((sum, item) => {
+        sellerItems.forEach((item) => {
+            const itemStatus = (item.status || order.orderstatus || "").toLowerCase();
             const qty = Number(item.quantity) || 1;
+            const itemAmount = (Number(item.price) || 0) * qty;
+
             totalItemsSold += qty;
-            return sum + (Number(item.price) || 0) * qty;
-        }, 0);
 
-        // Do not count cancelled or returned orders in active revenue
-        if (!["cancelled", "returned", "rto"].includes(st)) {
-            totalRevenue += orderSellerAmount;
-        }
+            if (!["cancelled", "returned", "rto"].includes(itemStatus)) {
+                totalRevenue += itemAmount;
+            }
 
-        if (st === "delivered") {
-            deliveredRevenue += orderSellerAmount;
-        } else if (
-            ["pending", "confirmed", "processing", "rtd", "shipped", "out_for_delivery"].includes(st)
-        ) {
-            pendingRevenue += orderSellerAmount;
-        } else if (["cancelled", "returned", "return_requested", "rto"].includes(st)) {
-            returnedRevenue += orderSellerAmount;
-        }
+            if (itemStatus === "delivered") {
+                deliveredRevenue += itemAmount;
+            } else if (
+                ["pending", "confirmed", "processing", "rtd", "shipped", "out_for_delivery"].includes(
+                    itemStatus
+                )
+            ) {
+                pendingRevenue += itemAmount;
+            } else if (["cancelled", "returned", "return_requested", "rto"].includes(itemStatus)) {
+                returnedRevenue += itemAmount;
+            }
+        });
     });
 
-    // 3. Fetch Recent Orders (filtered strictly to this seller's items)
     const recentOrdersRaw = await Order.find({
         "orderitem.seller": sellerId,
     })
@@ -152,7 +162,6 @@ export const getSellerOrders = asynchandler(async (req, res) => {
         .sort({ createdAt: -1 })
         .lean();
 
-    // Multi-Vendor Isolation: Each seller receives ONLY their items and their exact revenue amount
     const orders = ordersRaw.map((order) => formatOrderForSeller(order, sellerId));
 
     res.status(200).json({
@@ -162,11 +171,12 @@ export const getSellerOrders = asynchandler(async (req, res) => {
     });
 });
 
-// 4. SELLER ORDER STATUS UPDATE
+// 4. SELLER ORDER STATUS UPDATE (Strict Per-Seller Product Isolation)
 export const updateSellerOrderStatus = asynchandler(async (req, res) => {
     const sellerId = req.user._id;
+    const sellerIdStr = sellerId.toString();
     const { orderId } = req.params;
-    const { orderstatus, courier, trackingNumber, location, message } = req.body;
+    const { orderstatus, courier, trackingNumber, location, message, isLabelPrinted } = req.body;
 
     const allowedSellerStatuses = [
         "confirmed",
@@ -194,7 +204,7 @@ export const updateSellerOrderStatus = asynchandler(async (req, res) => {
         );
     }
 
-    // Verify order contains products from this seller
+    // Find order
     const order = await Order.findOne({
         _id: orderId,
         "orderitem.seller": sellerId,
@@ -203,11 +213,6 @@ export const updateSellerOrderStatus = asynchandler(async (req, res) => {
     if (!order) {
         throw new ApiError("Order not found or you are not authorized to update this order", 404);
     }
-
-    order.orderstatus = normalizedStatus;
-
-    if (courier) order.courier = courier.trim();
-    if (trackingNumber) order.trackingNumber = trackingNumber.trim();
 
     const defaultMessages = {
         confirmed: "Order confirmed by seller and being prepared.",
@@ -219,12 +224,52 @@ export const updateSellerOrderStatus = asynchandler(async (req, res) => {
         cancelled: "Order item cancelled by seller due to inventory constraints.",
     };
 
-    order.statusHistory = order.statusHistory || [];
+    // 🔒 ATOMIC MULTI-VENDOR ISOLATION:
+    // Update ONLY items belonging to this specific seller!
+    let sellerItemsUpdated = 0;
+    for (const item of order.orderitem) {
+        if ((item.seller?._id || item.seller)?.toString() === sellerIdStr) {
+            item.status = normalizedStatus;
+            if (courier) item.courier = courier.trim();
+            if (trackingNumber) item.trackingNumber = trackingNumber.trim();
+            if (isLabelPrinted !== undefined) {
+                item.isLabelPrinted = Boolean(isLabelPrinted);
+            }
+
+            if (!item.statusHistory) item.statusHistory = [];
+            item.statusHistory.push({
+                status: normalizedStatus,
+                timestamp: new Date(),
+                message:
+                    message ||
+                    defaultMessages[normalizedStatus] ||
+                    `Status updated to ${normalizedStatus}`,
+                location: location || "Seller Warehouse Hub",
+            });
+            sellerItemsUpdated++;
+        }
+    }
+
+    // Calculate aggregated status for overall order
+    const allStatuses = order.orderitem.map((i) => (i.status || "pending").toLowerCase());
+    if (allStatuses.every((s) => s === "delivered")) {
+        order.orderstatus = "delivered";
+    } else if (allStatuses.every((s) => s === "cancelled")) {
+        order.orderstatus = "cancelled";
+    } else if (allStatuses.some((s) => ["shipped", "out_for_delivery"].includes(s))) {
+        order.orderstatus = "shipped";
+    } else if (allStatuses.some((s) => ["processing", "rtd"].includes(s))) {
+        order.orderstatus = "processing";
+    } else if (allStatuses.some((s) => s === "confirmed")) {
+        order.orderstatus = "confirmed";
+    }
+
+    if (!order.statusHistory) order.statusHistory = [];
     order.statusHistory.push({
         status: normalizedStatus,
         timestamp: new Date(),
-        message: message || defaultMessages[normalizedStatus] || `Status updated to ${normalizedStatus}`,
-        location: location || "Seller Warehouse Hub",
+        message: `Seller updated item status to ${normalizedStatus}`,
+        location: location || "Seller Fulfillment Center",
     });
 
     await order.save();
@@ -234,6 +279,38 @@ export const updateSellerOrderStatus = asynchandler(async (req, res) => {
     res.status(200).json({
         success: true,
         message: `Order status successfully updated to ${normalizedStatus}`,
+        order: formattedOrder,
+    });
+});
+
+// 5. MARK SHIPPING LABEL AS PRINTED (Seller Specific)
+export const markSellerLabelPrinted = asynchandler(async (req, res) => {
+    const sellerId = req.user._id;
+    const sellerIdStr = sellerId.toString();
+    const { orderId } = req.params;
+
+    const order = await Order.findOne({
+        _id: orderId,
+        "orderitem.seller": sellerId,
+    });
+
+    if (!order) {
+        throw new ApiError("Order not found or unauthorized", 404);
+    }
+
+    for (const item of order.orderitem) {
+        if ((item.seller?._id || item.seller)?.toString() === sellerIdStr) {
+            item.isLabelPrinted = true;
+        }
+    }
+
+    await order.save();
+
+    const formattedOrder = formatOrderForSeller(order, sellerId);
+
+    res.status(200).json({
+        success: true,
+        message: "Shipping label marked as printed",
         order: formattedOrder,
     });
 });
