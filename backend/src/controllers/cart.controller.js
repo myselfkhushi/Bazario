@@ -79,7 +79,7 @@ export const addToCart = asynchandler(async (req, res) => {
 });
 
 // ==========================================
-// 2. GET MY CART
+// 2. GET MY CART (With Automatic Orphan Cleanup)
 // ==========================================
 export const getMyCart = asynchandler(async (req, res) => {
     const cartItems = await Cart.find({
@@ -88,10 +88,29 @@ export const getMyCart = asynchandler(async (req, res) => {
     .populate("product")
     .lean();
 
+    // 🛑 AUTOMATIC ORPHAN CLEANUP:
+    // If a seller deleted a product, filter it out immediately and clean from DB in background
+    const validCartItems = [];
+    const orphanedItemIds = [];
+
+    for (const item of cartItems) {
+        if (!item.product) {
+            orphanedItemIds.push(item._id);
+        } else {
+            validCartItems.push(item);
+        }
+    }
+
+    if (orphanedItemIds.length > 0) {
+        Cart.deleteMany({ _id: { $in: orphanedItemIds } })
+            .then((result) => console.log(`[Auto-Cleanup] Removed ${result.deletedCount} orphaned cart items.`))
+            .catch((err) => console.error("[Auto-Cleanup] Error removing orphaned cart items:", err));
+    }
+
     return res.status(200).json({
         success: true,
-        count: cartItems.length,
-        cart: cartItems,
+        count: validCartItems.length,
+        cart: validCartItems,
     });
 });
 
@@ -122,7 +141,9 @@ export const updateCartItemQuantity = asynchandler(async (req, res) => {
 
     const productData = await Product.findById(cartItem.product);
     if (!productData) {
-        throw new ApiError("Product not found", 404);
+        // Auto-clean deleted product from user's cart
+        await Cart.deleteOne({ _id: id });
+        throw new ApiError("This product is no longer available and has been removed from your cart", 404);
     }
 
     if (parsedQuantity > productData.stock) {
