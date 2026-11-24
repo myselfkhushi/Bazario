@@ -1,7 +1,7 @@
 import api from "../../api/axios";
 
 export const getMyOrders = async () => {
-    const response = await api.get("/order/getorder");
+    const response = await api.get("/order/getorder?limit=200");
     return response.data;
 };
 

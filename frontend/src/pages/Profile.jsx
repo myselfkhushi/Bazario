@@ -19,6 +19,7 @@ import {
 import { updateUserProfile } from "../features/auth/authAPI";
 import { setUser, logout } from "../features/auth/authSlice";
 import { logoutUser } from "../features/auth/authAPI";
+import AccountSidebar from "../component/account/AccountSidebar.jsx";
 import LogoLoader from "../component/common/LogoLoader.jsx";
 
 function Profile() {
@@ -86,33 +87,8 @@ function Profile() {
 
                 <div className="flex flex-col lg:flex-row gap-8">
                     
-                    {/* Sidebar Navigation */}
-                    <aside className="w-full lg:w-64 shrink-0">
-                        <nav className="space-y-1">
-                            <Link to="/profile" className="flex items-center gap-3 px-4 py-3 bg-white text-slate-900 text-sm font-bold rounded-xl border border-slate-200 shadow-sm transition">
-                                <User className="w-4 h-4" />
-                                Personal Info
-                            </Link>
-                            <Link to="/orders" className="flex items-center gap-3 px-4 py-3 text-slate-600 hover:text-slate-900 hover:bg-slate-100 text-sm font-semibold rounded-xl transition">
-                                <Package className="w-4 h-4" />
-                                My Orders
-                            </Link>
-                            <Link to="/wishlist" className="flex items-center gap-3 px-4 py-3 text-slate-600 hover:text-slate-900 hover:bg-slate-100 text-sm font-semibold rounded-xl transition">
-                                <Heart className="w-4 h-4" />
-                                Wishlist
-                            </Link>
-                            {user.role === "buyer" && (
-                                <Link to="/register/seller" className="flex items-center gap-3 px-4 py-3 text-slate-600 hover:text-purple-600 hover:bg-purple-50 text-sm font-semibold rounded-xl transition">
-                                    <Store className="w-4 h-4" />
-                                    Become a Seller
-                                </Link>
-                            )}
-                            <button onClick={handleSignOut} className="w-full flex items-center gap-3 px-4 py-3 text-rose-600 hover:bg-rose-50 text-sm font-semibold rounded-xl transition mt-4">
-                                <LogOut className="w-4 h-4" />
-                                Sign Out
-                            </button>
-                        </nav>
-                    </aside>
+                    {/* Flipkart-Style Account Sidebar */}
+                    <AccountSidebar activeTab="profile" />
 
                     {/* Main Content */}
                     <main className="flex-1 space-y-6">

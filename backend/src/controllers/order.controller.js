@@ -43,7 +43,7 @@ export const createorder = asynchandler(async (req, res) => {
 // 2. GET USER'S ORDER HISTORY
 export const getmyorder = asynchandler(async (req, res) => {
     const page = Math.max(1, Number(req.query.page) || 1);
-    const limit = Math.min(50, Math.max(1, Number(req.query.limit) || 10));
+    const limit = Math.min(200, Math.max(1, Number(req.query.limit) || 100));
     const skip = (page - 1) * limit;
 
     const [totalOrders, orders] = await Promise.all([

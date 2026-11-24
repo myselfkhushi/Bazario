@@ -27,14 +27,17 @@ function Wishlist() {
     const { items: guestWishlist } = useSelector((state) => state.guestWishlist);
     const { isAuthenticated } = useSelector((state) => state.auth);
 
-    // Active items to display
-    const items = isAuthenticated ? wishlist : guestWishlist;
+    // Active items to display (filter out any deleted null products)
+    const rawItems = isAuthenticated
+        ? Array.isArray(wishlist) ? wishlist : []
+        : Array.isArray(guestWishlist) ? guestWishlist : [];
+    const items = rawItems.filter((item) => item && (item.product || item.title || item._id));
 
     useEffect(() => {
         if (isAuthenticated) {
             fetchWishlist();
         }
-    }, [isAuthenticated]);
+    }, [isAuthenticated, dispatch]);
 
     const fetchWishlist = async () => {
         try {

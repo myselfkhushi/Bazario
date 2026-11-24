@@ -454,35 +454,35 @@ export default function Navbar() {
                         <span>Orders</span>
                       </Link>
 
-                      <button
-                        type="button"
-                        onClick={() => handleFeatureNotice("Coupons", "Exclusive Bazario Coupons: Use code WELCOME10 for 10% OFF at checkout!")}
-                        className="w-full text-left flex items-center gap-3 px-4 py-2 text-xs font-medium text-slate-700 hover:text-purple-700 hover:bg-purple-50 transition cursor-pointer"
+                      <Link
+                        to={isAuthenticated ? "/account/coupons" : "/login"}
+                        onClick={() => setOpenAccount(false)}
+                        className="flex items-center gap-3 px-4 py-2 text-xs font-medium text-slate-700 hover:text-purple-700 hover:bg-purple-50 transition"
                       >
                         <Ticket className="w-4 h-4 text-slate-500" />
                         <span>Coupons</span>
-                      </button>
+                      </Link>
 
-                      <button
-                        type="button"
-                        onClick={() => handleFeatureNotice("Supercoin", "SuperCoins Balance: You earn 2 SuperCoins per ₹100 spent on Bazario!")}
-                        className="w-full text-left flex items-center gap-3 px-4 py-2 text-xs font-medium text-slate-700 hover:text-purple-700 hover:bg-purple-50 transition cursor-pointer"
+                      <Link
+                        to={isAuthenticated ? "/account/supercoin" : "/login"}
+                        onClick={() => setOpenAccount(false)}
+                        className="flex items-center gap-3 px-4 py-2 text-xs font-medium text-slate-700 hover:text-purple-700 hover:bg-purple-50 transition"
                       >
                         <Coins className="w-4 h-4 text-slate-500" />
                         <span>Supercoin</span>
-                      </button>
+                      </Link>
 
-                      <button
-                        type="button"
-                        onClick={() => handleFeatureNotice("Plus Zone", "Bazario Plus Zone: Enjoy Free Express Delivery & Early Access to Flash Sales!")}
-                        className="w-full text-left flex items-center gap-3 px-4 py-2 text-xs font-medium text-slate-700 hover:text-purple-700 hover:bg-purple-50 transition cursor-pointer"
+                      <Link
+                        to={isAuthenticated ? "/account/plus" : "/login"}
+                        onClick={() => setOpenAccount(false)}
+                        className="flex items-center gap-3 px-4 py-2 text-xs font-medium text-slate-700 hover:text-purple-700 hover:bg-purple-50 transition"
                       >
                         <Sparkles className="w-4 h-4 text-purple-600" />
                         <span className="font-semibold text-purple-900">Bazario Plus Zone</span>
-                      </button>
+                      </Link>
 
                       <Link
-                        to="/profile"
+                        to={isAuthenticated ? "/account/wallet" : "/login"}
                         onClick={() => setOpenAccount(false)}
                         className="flex items-center gap-3 px-4 py-2 text-xs font-medium text-slate-700 hover:text-purple-700 hover:bg-purple-50 transition"
                       >
@@ -491,7 +491,7 @@ export default function Navbar() {
                       </Link>
 
                       <Link
-                        to="/profile"
+                        to={isAuthenticated ? "/account/addresses" : "/login"}
                         onClick={() => setOpenAccount(false)}
                         className="flex items-center gap-3 px-4 py-2 text-xs font-medium text-slate-700 hover:text-purple-700 hover:bg-purple-50 transition"
                       >
@@ -515,23 +515,23 @@ export default function Navbar() {
                         </div>
                       </Link>
 
-                      <button
-                        type="button"
-                        onClick={() => handleFeatureNotice("Gift Cards", "Bazario Gift Cards: Purchase or redeem digital vouchers instantly!")}
-                        className="w-full text-left flex items-center gap-3 px-4 py-2 text-xs font-medium text-slate-700 hover:text-purple-700 hover:bg-purple-50 transition cursor-pointer"
+                      <Link
+                        to={isAuthenticated ? "/account/gift-cards" : "/login"}
+                        onClick={() => setOpenAccount(false)}
+                        className="flex items-center gap-3 px-4 py-2 text-xs font-medium text-slate-700 hover:text-purple-700 hover:bg-purple-50 transition"
                       >
                         <Gift className="w-4 h-4 text-slate-500" />
                         <span>Gift Cards</span>
-                      </button>
+                      </Link>
 
-                      <button
-                        type="button"
-                        onClick={() => handleFeatureNotice("Notifications", "You're all caught up! No unread promotional or order alerts.")}
-                        className="w-full text-left flex items-center gap-3 px-4 py-2 text-xs font-medium text-slate-700 hover:text-purple-700 hover:bg-purple-50 transition cursor-pointer"
+                      <Link
+                        to={isAuthenticated ? "/account/notifications" : "/login"}
+                        onClick={() => setOpenAccount(false)}
+                        className="flex items-center gap-3 px-4 py-2 text-xs font-medium text-slate-700 hover:text-purple-700 hover:bg-purple-50 transition"
                       >
                         <Bell className="w-4 h-4 text-slate-500" />
                         <span>Notifications</span>
-                      </button>
+                      </Link>
                     </div>
 
                     {/* Auth Status CTA */}

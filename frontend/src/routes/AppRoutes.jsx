@@ -23,6 +23,15 @@ import SellerOnboarding from "../pages/seller/SellerOnboarding.jsx";
 import Wishlist from "../pages/Buyer/Wishlist.jsx";
 import Profile from "../pages/Profile";
 
+// Account sub-pages (Flipkart Account options)
+import SavedAddresses from "../pages/Account/SavedAddresses.jsx";
+import Coupons from "../pages/Account/Coupons.jsx";
+import Supercoin from "../pages/Account/Supercoin.jsx";
+import PlusZone from "../pages/Account/PlusZone.jsx";
+import WalletCards from "../pages/Account/WalletCards.jsx";
+import GiftCards from "../pages/Account/GiftCards.jsx";
+import Notifications from "../pages/Account/Notifications.jsx";
+
 // Company sub-pages
 import About from "../pages/company/About.jsx";
 import Careers from "../pages/company/Careers.jsx";
@@ -85,6 +94,13 @@ function AppRoutes() {
           <Route path="/checkout" element={<ProtectedRoute><Checkout /></ProtectedRoute>} />
           <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
           <Route path="/orders" element={<ProtectedRoute><Orders /></ProtectedRoute>} />
+          <Route path="/account/addresses" element={<ProtectedRoute><SavedAddresses /></ProtectedRoute>} />
+          <Route path="/account/coupons" element={<ProtectedRoute><Coupons /></ProtectedRoute>} />
+          <Route path="/account/supercoin" element={<ProtectedRoute><Supercoin /></ProtectedRoute>} />
+          <Route path="/account/plus" element={<ProtectedRoute><PlusZone /></ProtectedRoute>} />
+          <Route path="/account/wallet" element={<ProtectedRoute><WalletCards /></ProtectedRoute>} />
+          <Route path="/account/gift-cards" element={<ProtectedRoute><GiftCards /></ProtectedRoute>} />
+          <Route path="/account/notifications" element={<ProtectedRoute><Notifications /></ProtectedRoute>} />
 
           <Route path="/register" element={<Register />} />
           <Route path="/login" element={<Login />} />

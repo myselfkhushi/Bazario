@@ -344,39 +344,13 @@ function Shop() {
   return (
     <div className="bg-slate-50 min-h-screen text-slate-900 font-sans pb-24">
       
-      {/* ── 1. FLIPKART IMAGE 4: DYNAMIC CATEGORY NAVIGATION & VISUAL BRAND SELECTOR ── */}
+      {/* ── 1. FLIPKART IMAGE 4: DYNAMIC VISUAL BRAND SELECTOR FOR ACTIVE CATEGORY ── */}
       <section className="bg-white border-b border-slate-200 shadow-2xs">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 sm:py-4">
           
-          {/* Category Switcher Tabs */}
-          <div className="flex items-center gap-2 sm:gap-4 overflow-x-auto whitespace-nowrap scrollbar-hide pb-2">
-            {CATEGORIES.map((cat) => {
-              const Icon = cat.icon;
-              const isCatActive =
-                cat.value.toLowerCase() === category.toLowerCase() ||
-                (cat.value === "All" && category === "All");
-
-              return (
-                <button
-                  key={cat.value}
-                  type="button"
-                  onClick={() => handleCategorySelect(cat.value)}
-                  className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all cursor-pointer ${
-                    isCatActive
-                      ? "bg-blue-600 text-white shadow-md shadow-blue-200 scale-102"
-                      : "bg-slate-50 text-slate-600 hover:bg-slate-100 hover:text-slate-900 border border-slate-200/80"
-                  }`}
-                >
-                  <Icon className="w-4 h-4 shrink-0" />
-                  <span>{cat.label}</span>
-                </button>
-              );
-            })}
-          </div>
-
-          {/* ── Flipkart Image 4: Visual Brand Cards Inside Active Category ── */}
-          <div className="mt-4 pt-4 border-t border-slate-100">
-            <div className="flex items-center justify-between mb-3">
+          {/* Visual Brand Cards Inside Active Category (Flipkart Image 4) */}
+          <div>
+            <div className="flex items-center justify-between mb-2.5">
               <div className="flex items-center gap-2">
                 <span className="text-xs font-black uppercase tracking-wider text-slate-400">
                   {category === "All" ? "Featured Brands" : `Popular Brands in ${category}`}
